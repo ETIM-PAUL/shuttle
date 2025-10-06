@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
+import { useEffect } from 'react';
+import { checkXverseOnLoad } from '../../utils/xverse_handler';
 
 const Header = () => {
   const location = useLocation();
@@ -12,6 +14,12 @@ const Header = () => {
     lightning: 'connected',
     starknet: 'connected'
   });
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [addresses, setAddresses] = useState(null);
+  const [error, setError] = useState(null);
+
+
 
   const navigationItems = [
     {
@@ -49,6 +57,35 @@ const Header = () => {
       default:
         return 'text-muted-foreground';
     }
+  };
+
+  useEffect(() => {
+    // Check if wallet is installed on component mount
+    checkXverseOnLoad((installed) => {
+      setIsInstalled(installed);
+    });
+  }, []);
+
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    setError(null);
+
+    const result = await connectXverseWallet();
+
+    if (result.success && result.addresses) {
+      setAddresses(result.addresses);
+    } else {
+      setError(result.error || 'Failed to connect');
+    }
+
+    setIsConnecting(false);
+  };
+
+  const handleInstall = () => {
+    window.open(
+      'https://chromewebstore.google.com/detail/xverse-bitcoin-crypto-wal/idnnbdplmphpflfnlkomgpfbpcgelopg?hl=en-GB&authuser=0&pli=1',
+      '_blank'
+    );
   };
 
   const Logo = () => (
@@ -129,6 +166,18 @@ const Header = () => {
               </div>
             )}
             
+            {!isInstalled ? 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleInstall}
+              iconName="Wallet"
+              iconPosition="left"
+              className="transition-smooth"
+            >
+              Install Xverse Wallet
+            </Button>
+            :
             <Button
               variant={isWalletConnected ? "outline" : "default"}
               size="sm"
@@ -139,6 +188,7 @@ const Header = () => {
             >
               {isWalletConnected ? 'Connected' : 'Connect Wallet'}
             </Button>
+            }
           </div>
 
           {/* Mobile Menu */}
