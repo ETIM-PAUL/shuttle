@@ -29,18 +29,6 @@ const BridgeAndDeploy = () => {
       features: ['Auto-compound', 'Liquidity Mining', 'Governance Rewards']
     },
     {
-      id: 'endur-vault',
-      name: 'Endur Vault',
-      description: 'Delta-neutral strategies for stable returns',
-      type: 'vault',
-      apy: 8.92,
-      risk: 'Low',
-      tvl: '28.7M',
-      minDeposit: '0.005',
-      lockPeriod: '30 days',
-      features: ['Delta-neutral', 'Risk Management', 'Stable Returns']
-    },
-    {
       id: 'vesu-lending',
       name: 'Vesu Lending',
       description: 'Supply WBTC to earn lending interest',

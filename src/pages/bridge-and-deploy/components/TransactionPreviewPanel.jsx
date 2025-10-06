@@ -177,9 +177,9 @@ const TransactionPreviewPanel = ({
         loading={isDeploying}
         iconName="Rocket"
         iconPosition="left"
-        className="mt-6"
+        className="mt-6 bg-gray-600 hover:bg-gray-700 disabled:cursor-not-allowed"
       >
-        {isDeploying ? 'Deploying...' : 'Deploy to Yield Protocol'}
+        {isDeploying ? 'Deploying...' : selectedProtocol?.id === "troves-vault" ? 'Shuttle Yield Farming' : 'Shuttle Lending Interest '}
       </Button>
       {!canDeploy && amount && parseFloat(amount) > 0 && (
         <div className="flex items-center space-x-2 p-3 bg-warning/10 border border-warning/20 rounded-md">
