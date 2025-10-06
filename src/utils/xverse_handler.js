@@ -50,6 +50,45 @@ console.log("verse", xverse)
   }
 };
 
+// Function to get BTC balance from Xverse wallet
+export const getBtcBalance = async (address) => {
+  try {
+    if (!isXverseInstalled()) {
+      return {
+        success: false,
+        error: 'Xverse wallet not installed'
+      };
+    }
+
+    const xverse = window.XverseProviders.BitcoinProvider;
+    
+    // Request balance for the given address
+    const response = await xverse.request('getBalance', {
+      address: address,
+      message: 'Get Bitcoin balance'
+    });
+
+    if (response.status === 'success') {
+      // Convert satoshis to BTC (1 BTC = 100,000,000 satoshis)
+      const balanceInBtc = (response.result.confirmed / 100000000).toFixed(8);
+      return {
+        success: true,
+        balance: balanceInBtc
+      };
+    } else {
+      return {
+        success: false,
+        error: 'Failed to get balance'
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+};
+
 // Helper function to check wallet status on page load
 export const checkXverseOnLoad = (callback) => {
   if (document.readyState === 'complete') {

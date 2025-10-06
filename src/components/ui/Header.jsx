@@ -3,7 +3,8 @@ import { useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
 import { useEffect } from 'react';
-import { checkXverseOnLoad } from '../../utils/xverse_handler';
+import { checkXverseOnLoad, connectXverseWallet, getBtcBalance } from '../../utils/xverse_handler';
+import toast from 'react-hot-toast';
 
 const Header = () => {
   const location = useLocation();
@@ -18,8 +19,16 @@ const Header = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [addresses, setAddresses] = useState(null);
   const [error, setError] = useState(null);
+  const [walletAddress, setWalletAddress] = useState(null);
+  const [btcBalance, setBtcBalance] = useState('0.00000000');
 
 
+
+  // Function to shorten wallet address
+  const shortenAddress = (address) => {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
 
   const navigationItems = [
     {
@@ -69,16 +78,29 @@ const Header = () => {
   const handleConnect = async () => {
     setIsConnecting(true);
     setError(null);
-
-    const result = await connectXverseWallet();
-
-    if (result.success && result.addresses) {
-      setAddresses(result.addresses);
-    } else {
-      setError(result.error || 'Failed to connect');
-    }
-
-    setIsConnecting(false);
+    try {
+      const result = await connectXverseWallet();
+  
+      if (result.success && result.addresses) {
+        setAddresses(result.addresses);
+        setWalletAddress(result.addresses.payment); // Use payment address as primary
+        setIsWalletConnected(true);
+        // Fetch actual BTC balance
+        const balanceResult = await getBtcBalance(result.addresses.payment);
+        if (balanceResult.success) {
+          setBtcBalance(balanceResult.balance);
+        } else {
+          setBtcBalance('0.00000000'); // Fallback to 0 if balance fetch fails
+          console.warn('Failed to fetch balance:', balanceResult.error);
+        }
+        setIsConnecting(false);   
+        toast.success("Wallet connected successfully")
+      }
+      } catch (error) {
+        setError(result.error || 'Failed to connect');
+        toast.error(result?.error)
+        setIsConnecting(false);   
+    };
   };
 
   const handleInstall = () => {
@@ -159,10 +181,32 @@ const Header = () => {
 
           {/* Wallet Connection */}
           <div className="flex items-center space-x-3">
-            {isWalletConnected && (
-              <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-surface rounded-md border">
-                <Icon name="Wallet" size={16} className="text-accent" />
-                <span className="text-sm font-data text-foreground">{walletBalance} BTC</span>
+            {isWalletConnected && walletAddress && (
+              <div className="hidden sm:flex items-center space-x-3 px-3 py-2 bg-surface rounded-md border">
+                {/* Wallet Address */}
+                <div className="flex items-center space-x-2">
+                  <Icon name="Wallet" size={16} className="text-accent" />
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground">Address</span>
+                    <span className="text-sm font-mono text-foreground">
+                      {shortenAddress(walletAddress)}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Separator */}
+                <div className="w-px h-6 bg-border" />
+                
+                {/* BTC Balance */}
+                <div className="flex items-center space-x-2">
+                  <Icon name="Bitcoin" size={16} className="text-orange-500" />
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground">Balance</span>
+                    <span className="text-sm font-data text-foreground">
+                      {btcBalance} BTC
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
             
@@ -178,15 +222,33 @@ const Header = () => {
               Install Xverse Wallet
             </Button>
             :
+            !isWalletConnected ? 
             <Button
-              variant={isWalletConnected ? "outline" : "default"}
+              variant="default"
               size="sm"
-              onClick={handleWalletConnect}
-              iconName={isWalletConnected ? "Check" : "Wallet"}
+              onClick={handleConnect}
+              iconName="Wallet"
+              iconPosition="left"
+              className="transition-smooth"
+              disabled={isConnecting}
+            >
+              {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+            </Button>
+            :
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setIsWalletConnected(false);
+                setWalletAddress(null);
+                setBtcBalance('0.00000000');
+                setAddresses(null);
+              }}
+              iconName="LogOut"
               iconPosition="left"
               className="transition-smooth"
             >
-              {isWalletConnected ? 'Connected' : 'Connect Wallet'}
+              Disconnect
             </Button>
             }
           </div>
