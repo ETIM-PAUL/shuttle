@@ -4,6 +4,7 @@ import Icon from '../AppIcon';
 import Button from './Button';
 import { useEffect } from 'react';
 import { checkXverseOnLoad, connectXverseWallet, getBtcBalance } from '../../utils/xverse_handler';
+// import { getBtcBalance } from '../../api';
 import toast from 'react-hot-toast';
 
 const Header = () => {
@@ -80,25 +81,24 @@ const Header = () => {
     setError(null);
     try {
       const result = await connectXverseWallet();
-  
+      
       if (result.success && result.addresses) {
         setAddresses(result.addresses);
         setWalletAddress(result.addresses.payment); // Use payment address as primary
         setIsWalletConnected(true);
-        // Fetch actual BTC balance
-        const balanceResult = await getBtcBalance(result.addresses.payment);
-        if (balanceResult.success) {
-          setBtcBalance(balanceResult.balance);
-        } else {
-          setBtcBalance('0.00000000'); // Fallback to 0 if balance fetch fails
-          console.warn('Failed to fetch balance:', balanceResult.error);
-        }
-        setIsConnecting(false);   
+        
+        const bal = await getBtcBalance(result.addresses.payment);
+    console.log("response", bal?.balance);
+
+        setBtcBalance(bal?.balance);
         toast.success("Wallet connected successfully")
       }
+      setIsConnecting(false);   
+
       } catch (error) {
-        setError(result.error || 'Failed to connect');
-        toast.error(result?.error)
+
+        setError(error.error || 'Failed to connect');
+        // toast.error(e?.error)
         setIsConnecting(false);   
     };
   };
@@ -240,6 +240,7 @@ const Header = () => {
               size="sm"
               onClick={() => {
                 setIsWalletConnected(false);
+                setIsConnecting(false);
                 setWalletAddress(null);
                 setBtcBalance('0.00000000');
                 setAddresses(null);

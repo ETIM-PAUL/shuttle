@@ -21,25 +21,25 @@ export const connectXverseWallet = async () => {
     }
 
     const xverse = window.XverseProviders.BitcoinProvider;
-console.log("verse", xverse)
     // Request wallet connection
     const response = await xverse.request('getAccounts', {
       purposes: ['payment', 'ordinals'],
       message: 'Connect to your app'
     });
 
-    if (response.status === 'success') {
+
+    if (response?.error) {
+      return {
+        success: false,
+        error:response?.error?.message
+      };
+    } else {
       return {
         success: true,
         addresses: {
           payment: response.result[0].address,
           ordinals: response.result[1].address
         }
-      };
-    } else {
-      return {
-        success: false,
-        error: 'User rejected the connection'
       };
     }
   } catch (error) {
@@ -68,9 +68,12 @@ export const getBtcBalance = async (address) => {
       message: 'Get Bitcoin balance'
     });
 
-    if (response.status === 'success') {
+    console.log("response", response);
+    
+
+    if (response.result) {
       // Convert satoshis to BTC (1 BTC = 100,000,000 satoshis)
-      const balanceInBtc = (response.result.confirmed / 100000000).toFixed(8);
+      const balanceInBtc = (Number(response.result.confirmed) / 100000000).toFixed(8);
       return {
         success: true,
         balance: balanceInBtc
