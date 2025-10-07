@@ -6,24 +6,28 @@ import { useEffect } from 'react';
 import { checkXverseOnLoad, connectXverseWallet, getBtcBalance } from '../../utils/xverse_handler';
 // import { getBtcBalance } from '../../api';
 import toast from 'react-hot-toast';
+import { useGlobal } from '../../context/global';
 
 const Header = () => {
   const location = useLocation();
-  const [isWalletConnected, setIsWalletConnected] = useState(false);
-  const [walletBalance, setWalletBalance] = useState('0.00');
   const [networkStatus, setNetworkStatus] = useState({
     bitcoin: 'connected',
     lightning: 'connected',
     starknet: 'connected'
   });
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [addresses, setAddresses] = useState(null);
-  const [error, setError] = useState(null);
-  const [walletAddress, setWalletAddress] = useState(null);
-  const [btcBalance, setBtcBalance] = useState('0.00000000');
-
-
+  const {
+    isWalletConnected, 
+    setIsWalletConnected, 
+    btcBalance, 
+    setBtcBalance, 
+    walletAddress, 
+    setWalletAddress, 
+    isInstalled, 
+    isConnecting, 
+    setIsConnecting,
+    handleInstall,
+    handleConnect
+  } = useGlobal();
 
   // Function to shorten wallet address
   const shortenAddress = (address) => {
@@ -46,15 +50,6 @@ const Header = () => {
     }
   ];
 
-  const handleWalletConnect = () => {
-    if (!isWalletConnected) {
-      setIsWalletConnected(true);
-      setWalletBalance('0.12345678');
-    } else {
-      setIsWalletConnected(false);
-      setWalletBalance('0.00');
-    }
-  };
 
   const getNetworkStatusColor = (status) => {
     switch (status) {
@@ -67,47 +62,6 @@ const Header = () => {
       default:
         return 'text-muted-foreground';
     }
-  };
-
-  useEffect(() => {
-    // Check if wallet is installed on component mount
-    checkXverseOnLoad((installed) => {
-      setIsInstalled(installed);
-    });
-  }, []);
-
-  const handleConnect = async () => {
-    setIsConnecting(true);
-    setError(null);
-    try {
-      const result = await connectXverseWallet();
-      
-      if (result.success && result.addresses) {
-        setAddresses(result.addresses);
-        setWalletAddress(result.addresses.payment); // Use payment address as primary
-        setIsWalletConnected(true);
-        
-        const bal = await getBtcBalance(result.addresses.payment);
-    console.log("response", bal?.balance);
-
-        setBtcBalance(bal?.balance);
-        toast.success("Wallet connected successfully")
-      }
-      setIsConnecting(false);   
-
-      } catch (error) {
-
-        setError(error.error || 'Failed to connect');
-        // toast.error(e?.error)
-        setIsConnecting(false);   
-    };
-  };
-
-  const handleInstall = () => {
-    window.open(
-      'https://chromewebstore.google.com/detail/xverse-bitcoin-crypto-wal/idnnbdplmphpflfnlkomgpfbpcgelopg?hl=en-GB&authuser=0&pli=1',
-      '_blank'
-    );
   };
 
   const Logo = () => (
@@ -243,7 +197,6 @@ const Header = () => {
                 setIsConnecting(false);
                 setWalletAddress(null);
                 setBtcBalance('0.00000000');
-                setAddresses(null);
               }}
               iconName="LogOut"
               iconPosition="left"
