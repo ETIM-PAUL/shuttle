@@ -1,4 +1,38 @@
 // xverseWallet.ts
+import { request } from "sats-connect";
+import { RpcProvider, Contract } from 'starknet';
+import { formatUnits, uint256ToBigInt } from "./cn";
+
+const ERC20_ABI = [
+  {
+    name: 'balanceOf',
+    type: 'function',
+    state_mutability: 'view',
+    inputs: [{ name: 'account', type: 'core::starknet::contract_address::ContractAddress' }],
+    outputs: [{ type: 'core::integer::u256' }]
+  },
+  {
+    name: 'decimals',
+    type: 'function',
+    state_mutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'core::integer::u8' }]
+  },
+  {
+    name: 'symbol',
+    type: 'function',
+    state_mutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'core::felt252' }]
+  },
+  {
+    name: 'name',
+    type: 'function',
+    state_mutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'core::felt252' }]
+  }
+];
 
 const XVERSE_INSTALL_URL = 'https://chromewebstore.google.com/detail/xverse-bitcoin-crypto-wal/idnnbdplmphpflfnlkomgpfbpcgelopg?hl=en-GB&authuser=0&pli=1';
 
@@ -20,28 +54,52 @@ export const connectXverseWallet = async () => {
       };
     }
 
-    const xverse = window.XverseProviders.BitcoinProvider;
-    // Request wallet connection
-    const response = await xverse.request('getAccounts', {
-      purposes: ['payment', 'ordinals'],
-      message: 'Connect to your app'
-    });
+    // const xverse = window.XverseProviders.BitcoinProvider;
+    // // Request wallet connection
+    // const response = await xverse.request('getAccounts', {
+    //   purposes: ['payment', 'ordinals'],
+    //   message: 'Connect to your app'
+    // });
 
+    try {
+      const response = await request('wallet_connect', null);
+      console.log("response", response)
+      if (response.status === 'success') {
+        const paymentAddressItem = response.result.addresses.find(
+          (address) => address.purpose === "payment"
+        );
+        const ordinalsAddressItem = response.result.addresses.find(
+          (address) => address.purpose === "ordinals"
+        );
+        const starknetAddressItem = response.result.addresses.find(
+          (address) => address.purpose === "starknet"
+        );
 
-    if (response?.error) {
-      return {
-        success: false,
-        error:response?.error?.message
-      };
-    } else {
-      return {
-        success: true,
-        addresses: {
-          payment: response.result[0].address,
-          ordinals: response.result[1].address
+        return {
+          success: true,
+          addresses: {
+            payment: paymentAddressItem.address,
+            ordinals: ordinalsAddressItem.address,
+            starknet: starknetAddressItem.address
+          }
         }
-      };
+      } else {
+        if (response.error.code === RpcErrorCode.USER_REJECTION) {
+          return {
+            success: false,
+            error:response?.error
+          };
+        } else {
+          return {
+            success: false,
+            error:response?.error
+          };
+        }
+      }
+    } catch (err) {
+        alert(err.error);
     }
+
   } catch (error) {
     return {
       success: false,
@@ -68,9 +126,6 @@ export const getBtcBalance = async (address) => {
       message: 'Get Bitcoin balance'
     });
 
-    console.log("response", response);
-    
-
     if (response.result) {
       // Convert satoshis to BTC (1 BTC = 100,000,000 satoshis)
       const balanceInBtc = (Number(response.result.confirmed) / 100000000).toFixed(8);
@@ -91,6 +146,44 @@ export const getBtcBalance = async (address) => {
     };
   }
 };
+
+export async function getVesu_WBTC_Balance(userAddress) {
+  const provider = new RpcProvider({ nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-sepolia.public.blastapi.io' });
+  const tokenAddress = "0x04861ba938aed21f2cd7740acd3765ac4d2974783a3218367233de0153490cb6";
+  const erc20 = new Contract(ERC20_ABI, tokenAddress, provider);
+
+  const [balanceRes, decimalsRes] = await Promise.all([
+    erc20.balanceOf(userAddress),
+    erc20.decimals()
+  ]);
+  console.log("balanceRes", balanceRes)
+  console.log("decimalsRes", decimalsRes)
+
+  
+
+  const raw = balanceRes;
+  const decimals = Number(decimalsRes);
+  let symbol, name;
+
+  try {
+    symbol = await erc20.symbol();
+  } catch (error) {
+    console.log("error", error)
+  }
+  try {
+    name = await erc20.name();
+  } catch (error) {
+    console.log("error", error)
+  }
+
+  return {
+    raw,
+    decimals,
+    human: formatUnits(raw, decimals),
+    symbol,
+    name
+  };
+} 
 
 // Helper function to check wallet status on page load
 export const checkXverseOnLoad = (callback) => {

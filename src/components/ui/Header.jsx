@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
 import { useEffect } from 'react';
@@ -28,6 +28,7 @@ const Header = () => {
     handleInstall,
     handleConnect
   } = useGlobal();
+  const navigate = useNavigate();
 
   // Function to shorten wallet address
   const shortenAddress = (address) => {
@@ -47,6 +48,12 @@ const Header = () => {
       path: '/transaction-history',
       icon: 'History',
       tooltip: 'View transaction history and portfolio performance'
+    },
+    {
+      label: 'Wallet',
+      path: '/wallet',
+      icon: 'Wallet',
+      tooltip: 'View wallet address and portfolio balances'
     }
   ];
 
@@ -91,9 +98,9 @@ const Header = () => {
         {/* Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
           {navigationItems?.map((item) => (
-            <a
+            <span
               key={item?.path}
-              href={item?.path}
+              onClick = {() => navigate(item?.path)}
               className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-smooth group relative ${
                 location?.pathname === item?.path
                   ? 'text-accent bg-accent/10' :'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -109,7 +116,7 @@ const Header = () => {
               {location?.pathname === item?.path && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full" />
               )}
-            </a>
+            </span>
           ))}
         </nav>
 
@@ -138,7 +145,7 @@ const Header = () => {
             {isWalletConnected && walletAddress && (
               <div className="hidden sm:flex items-center space-x-3 px-3 py-2 bg-surface rounded-md border">
                 {/* Wallet Address */}
-                <div className="flex items-center space-x-2">
+                {/* <div className="flex items-center space-x-2">
                   <Icon name="Wallet" size={16} className="text-accent" />
                   <div className="flex flex-col">
                     <span className="text-xs text-muted-foreground">Address</span>
@@ -146,7 +153,7 @@ const Header = () => {
                       {shortenAddress(walletAddress)}
                     </span>
                   </div>
-                </div>
+                </div> */}
                 
                 {/* Separator */}
                 <div className="w-px h-6 bg-border" />

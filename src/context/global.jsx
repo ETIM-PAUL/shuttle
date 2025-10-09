@@ -1,6 +1,6 @@
 // src/context/global.jsx
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { checkXverseOnLoad, connectXverseWallet, getBtcBalance } from "../utils/xverse_handler";
+import { checkXverseOnLoad, connectXverseWallet, getBtcBalance, getVesu_WBTC_Balance } from "../utils/xverse_handler";
 import toast from "react-hot-toast";
 
 // Create the context
@@ -11,6 +11,9 @@ export const GlobalProvider = ({ children }) => {
     const [isWalletConnected, setIsWalletConnected] = useState(null);
     const [btcBalance, setBtcBalance] = useState(null);
     const [walletAddress, setWalletAddress] = useState(null);
+    const [starknetAddress, setStarknetAddress] = useState(null);
+    const [wBTCBalance, setWBTCBalance] = useState(null);
+    const [ordinalsAddress, setOrdinalsAddress] = useState(null);
     const [isInstalled, setIsInstalled] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [error, setError] = useState(null);
@@ -22,6 +25,16 @@ export const GlobalProvider = ({ children }) => {
       });
     }, []);
 
+    const handleGetWBTCBal = async (address) => {
+      setError(null);
+      try {
+          const res = await getVesu_WBTC_Balance(address);
+          setWBTCBalance(res?.human);
+        } catch (error) {
+          console.log("error", error)
+      };
+    };
+    
     const handleConnect = async () => {
       setIsConnecting(true);
       setError(null);
@@ -29,12 +42,13 @@ export const GlobalProvider = ({ children }) => {
         const result = await connectXverseWallet();
         if (result.success && result.addresses) {
           setWalletAddress(result.addresses.payment); // Use payment address as primary
+          setStarknetAddress(result.addresses.starknet); // Use payment address as primary
+          setOrdinalsAddress(result.addresses.ordinals); // Use payment address as primary
           setIsWalletConnected(true);
           
           const bal = await getBtcBalance(result.addresses.payment);
-        console.log("re", bal)
-
           setBtcBalance(bal?.balance);
+          await handleGetWBTCBal(result.addresses.starknet);
           toast.success("Wallet connected successfully")
         }
         setIsConnecting(false);   
@@ -61,12 +75,17 @@ export const GlobalProvider = ({ children }) => {
     setIsConnecting,
     btcBalance,
     setBtcBalance,
+    wBTCBalance,
+    setWBTCBalance,
     walletAddress,
+    starknetAddress,
+    ordinalsAddress,
     setWalletAddress,
     isInstalled,
     setIsInstalled,
     handleConnect,
-    handleInstall
+    handleInstall,
+    handleGetWBTCBal
   };
 
   return (

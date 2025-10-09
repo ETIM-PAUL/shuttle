@@ -10,10 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@atomiqlabs/chain-starknet": "^5.1.5",
     "@atomiqlabs/sdk": "^6.0.3",
     "@dhiwise/component-tagger": "^1.0.10",
     "@radix-ui/react-slot": "^1.2.3",
     "@reduxjs/toolkit": "^2.6.1",
+    "@scure/btc-signer": "^2.0.1",
+    "@starknet-io/get-starknet": "^4.0.8",
     "@tailwindcss/forms": "^0.5.7",
     "@tailwindcss/vite": "^4.1.13",
     "@testing-library/jest-dom": "^5.15.1",
@@ -36,6 +39,8 @@
     "react-router-hash-link": "^2.4.3",
     "recharts": "^2.15.2",
     "redux": "^5.0.1",
+    "sats-connect": "4.1.x",
+    "starknet": "^7.1.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "tailwindcss-elevation": "^2.0.0",
@@ -58,6 +63,7 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13",
     "vite": "^7.1.7",
+    "vite-plugin-node-polyfills": "^0.24.0",
     "vite-tsconfig-paths": "3.6.0"
   }
 }

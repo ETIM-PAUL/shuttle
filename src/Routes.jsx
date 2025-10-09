@@ -4,6 +4,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import ErrorBoundary from "./components/ErrorBoundry";
 import NotFound from "./pages/NotFound";
 import BridgeAndDeploy from './pages/bridge-and-deploy';
+import WalletSection from "./pages/wallet";
 
 const Routes = () => {
   return (
@@ -14,6 +15,7 @@ const Routes = () => {
         {/* Define your route here */}
         <Route path="/" element={<BridgeAndDeploy />} />
         <Route path="/bridge-and-deploy" element={<BridgeAndDeploy />} />
+        <Route path="/wallet" element={<WalletSection />} />
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>
       </ErrorBoundary>

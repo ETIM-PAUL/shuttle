@@ -6,6 +6,17 @@ import BridgeInputPanel from './components/BridgeInputPanel';
 import ProtocolSelectionCard from './components/ProtocolSelectionCard';
 import TransactionPreviewPanel from './components/TransactionPreviewPanel';
 import Icon from '../../components/AppIcon';
+import { useGlobal } from '../../context/global';
+import toast from 'react-hot-toast';
+import { protocols } from '../../utils/cn';
+import { connect } from "@starknet-io/get-starknet"
+
+import {getProviders, getProviderById, request} from "sats-connect";
+import {StarknetInitializer, StarknetInitializerType, StarknetSigner} from "@atomiqlabs/chain-starknet";
+import {SwapperFactory, BitcoinNetwork, fromHumanReadableString, timeoutSignal} from "@atomiqlabs/sdk";
+import {RpcProvider, WalletAccount} from "starknet";
+import {Transaction} from "@scure/btc-signer";
+
 
 const BridgeAndDeploy = () => {
   const [amount, setAmount] = useState('');
@@ -14,49 +25,132 @@ const BridgeAndDeploy = () => {
   const [showTransactionStatus, setShowTransactionStatus] = useState(false);
   const [transactionData, setTransactionData] = useState(null);
 
-  // Mock protocol data
-  const protocols = [
-    {
-      id: 'troves-vault',
-      name: 'Troves Vault',
-      description: 'Automated yield farming with WBTC collateral',
-      type: 'vault',
-      apy: 12.45,
-      risk: 'Medium',
-      tvl: '45.2M',
-      minDeposit: '0.001',
-      lockPeriod: 'Flexible',
-      features: ['Auto-compound', 'Liquidity Mining', 'Governance Rewards']
-    },
-    {
-      id: 'vesu-lending',
-      name: 'Vesu Lending',
-      description: 'Supply WBTC to earn lending interest',
-      type: 'lending',
-      apy: 6.78,
-      risk: 'Low',
-      tvl: '67.8M',
-      minDeposit: '0.001',
-      lockPeriod: 'None',
-      features: ['Instant Withdrawal', 'Variable APY', 'Overcollateralized']
-    }
-  ];
+  const {
+    isWalletConnected, 
+    handleGetWBTCBal,
+    walletAddress,
+    starknetAddress
+  } = useGlobal();
 
-  const handleDeploy = () => {
+  const handleDeploy = async () => {
     if (!amount || !selectedProtocol) return;
-
+    if (!isWalletConnected) {
+      toast.error("Wallet not connected");
+      return;
+    }
+  
     setIsDeploying(true);
+
     setTransactionData({
       amount: amount,
       protocol: selectedProtocol?.name,
       hash: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'
     });
+  
+    try {
+      const Factory = new SwapperFactory<[StarknetInitializerType]>([StarknetInitializer]);
+      const Tokens = Factory.Tokens;
 
-    // Simulate deployment process
-    setTimeout(() => {
+      const swapper = Factory.newSwapper({
+        chains: {
+          STARKNET: {
+            rpcUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-sepolia.public.blastapi.io'
+          }
+        },
+        bitcoinNetwork: BitcoinNetwork.TESTNET,
+      });
+      
+      // const swo = await connect();
+      if (!isWalletConnected) {
+        throw new Error('Failed to connect to wallet');
+      }
+      
+      // // Create RPC provider first
+      const rpcProvider = new RpcProvider({
+        nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-sepolia.public.blastapi.io/rpc/v0_8'
+      });
+      
+      const swo = await connect();
+
+      const starknetSigner = new StarknetSigner(await WalletAccount.connect(rpcProvider, swo));
+      
+    setShowTransactionStatus(true);
+      
+      const _exactIn = true;
+      const _amount = fromHumanReadableString(amount, Tokens.BITCOIN.BTC);
+      console.log("_amount", _amount)
+      
+      await swapper.init();
+      
+      // Create the swap
+      const swap = await swapper.swap(
+        Tokens.BITCOIN.BTC,
+        Tokens.STARKNET._TESTNET_WBTC_VESU,
+        _amount,
+        _exactIn,
+        undefined,
+        starknetAddress,
+        {
+          // gasAmount: 1_000_000_000_000_000_000n
+        }
+      );
+      
+      // Get funded PSBT
+      const {psbt, signInputs} = await swap.getFundedPsbt({
+        address: walletAddress, 
+        publicKey: "0229920e161c77db688903fdc9f740b140e7174d090fcde01e456f5c78994b0033" // You'll need to get this from your Bitcoin wallet
+      });
+      
+      const psbtBase64 = Buffer.from(psbt.toPSBT(0)).toString("base64");
+
+
+      // Sign PSBT with Xverse wallet
+      const response = await request('signPsbt', {
+        psbt: psbtBase64,
+        signInputs: {
+          [walletAddress]: signInputs
+        },
+      });
+
+      const signedPsbtBase64 = response.result.psbt;
+  
+      // Parse signed PSBT
+      const signedTransaction = Transaction.fromPSBT(Buffer.from(signedPsbtBase64, "base64"));
+      const bitcoinTxId = await swap.submitPsbt(signedTransaction);
+  
+      // Wait for payment
+      await swap.waitForBitcoinTransaction(
+        null, null,
+        (txId, confirmations, targetConfirmations, transactionETAms) => {
+          console.log(`Transaction ${txId} has ${confirmations}/${targetConfirmations} confirmations`);
+          // setTransactionData(...transactionData, {
+          //   hash: txId,
+          //   steps: [...transactionData?.steps, {
+          //     title: `Transaction ${txId} has ${confirmations}/${targetConfirmations} confirmations`,
+          //     status: "active"
+          //   }]
+          // });
+        }
+      );
+
+      //Swap should get automatically claimed by the watchtowers, if not we can call swap.claim() ourselves
+      try {
+        await swap.waitTillClaimedOrFronted(timeoutSignal(120*1000));
+      } catch (e) {
+        //Claim ourselves when automatic claim doesn't happen in 30 seconds
+        await swap.claim(starknetSigner);
+        console.log("error", e)
+      }
+  
+      await handleGetWBTCBal(starknetAddress);
       setIsDeploying(false);
-      setShowTransactionStatus(true);
-    }, 2000);
+      setShowTransactionStatus(false);
+      
+    } catch (error) {
+      console.error('Deploy error:', error);
+      toast.error(`Deploy failed: ${error.message}`);
+      setIsDeploying(false);
+    }
   };
 
   const handleTransactionClose = () => {
@@ -224,3 +318,7 @@ const BridgeAndDeploy = () => {
 };
 
 export default BridgeAndDeploy;
+// https://btc-testnet4.xverse.app
+// https://mempool.space/testnet4/api
+// 0.01479414
+// 0.00143706

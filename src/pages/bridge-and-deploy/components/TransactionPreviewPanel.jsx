@@ -173,7 +173,7 @@ const TransactionPreviewPanel = ({
         size="lg"
         fullWidth
         onClick={onDeploy}
-        disabled={!canDeploy || isDeploying}
+        disabled={isDeploying}
         loading={isDeploying}
         iconName="Rocket"
         iconPosition="left"
@@ -181,7 +181,7 @@ const TransactionPreviewPanel = ({
       >
         {isDeploying ? 'Deploying...' : selectedProtocol?.id === "troves-vault" ? 'Shuttle Yield Farming' : 'Shuttle Lending Interest '}
       </Button>
-      {!canDeploy && amount && parseFloat(amount) > 0 && (
+      {/* {!canDeploy && amount && parseFloat(amount) > 0 && (
         <div className="flex items-center space-x-2 p-3 bg-warning/10 border border-warning/20 rounded-md">
           <Icon name="AlertTriangle" size={16} className="text-warning" />
           <span className="text-sm text-warning">
@@ -192,7 +192,7 @@ const TransactionPreviewPanel = ({
             }
           </span>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

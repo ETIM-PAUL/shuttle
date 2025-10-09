@@ -35,20 +35,20 @@ const TransactionStatusOverlay = ({
   ];
 
   useEffect(() => {
-    if (isVisible && !isCompleted) {
-      const interval = setInterval(() => {
-        setCurrentStep((prev) => {
-          if (prev < transactionSteps?.length - 1) {
-            return prev + 1;
-          } else {
-            setIsCompleted(true);
-            return prev;
-          }
-        });
-      }, 3000);
+    // if (isVisible && !isCompleted) {
+    //   const interval = setInterval(() => {
+    //     setCurrentStep((prev) => {
+    //       if (prev < transactionSteps?.length - 1) {
+    //         return prev + 1;
+    //       } else {
+    //         setIsCompleted(true);
+    //         return prev;
+    //       }
+    //     });
+    //   }, 3000);
 
-      return () => clearInterval(interval);
-    }
+    //   return () => clearInterval(interval);
+    // }
   }, [isVisible, isCompleted]);
 
   const getStepStatus = (stepIndex) => {
@@ -77,8 +77,8 @@ const TransactionStatusOverlay = ({
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-200 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-background rounded-lg shadow-lg max-w-md w-full mx-4 animate-fade-in">
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+      <div className="bg-gray-700 rounded-lg shadow-lg max-w-md w-full mx-4 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center space-x-3">
@@ -90,7 +90,7 @@ const TransactionStatusOverlay = ({
                 Transaction Progress
               </h3>
               <p className="text-sm text-muted-foreground">
-                {transactionData?.amount || '0.12345678'} BTC
+                {transactionData?.amount} BTC
               </p>
             </div>
           </div>
@@ -125,7 +125,7 @@ const TransactionStatusOverlay = ({
             const iconColor = getStepIconColor(status);
 
             return (
-              <div key={step?.id} className="flex items-start space-x-4">
+              <div key={index} className="flex items-start space-x-4">
                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                   status === 'completed' ? 'bg-success/10' :
                   status === 'active' ? 'bg-accent/10' : 'bg-muted'
