@@ -70,7 +70,11 @@ const BridgeAndDeploy = () => {
         nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-sepolia.public.blastapi.io/rpc/v0_8'
       });
       
-      const swo = await connect();
+      const swo = await connect({
+        modalMode: "alwaysAsk",
+        modalTheme: "dark",
+        include: ["xverse"]
+      });
 
       const starknetSigner = new StarknetSigner(await WalletAccount.connect(rpcProvider, swo));
       
