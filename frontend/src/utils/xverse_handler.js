@@ -156,10 +156,6 @@ export async function getVesu_WBTC_Balance(userAddress) {
     erc20.balanceOf(userAddress),
     erc20.decimals()
   ]);
-  console.log("balanceRes", balanceRes)
-  console.log("decimalsRes", decimalsRes)
-
-  
 
   const raw = balanceRes;
   const decimals = Number(decimalsRes);

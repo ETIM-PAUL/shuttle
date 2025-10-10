@@ -101,7 +101,7 @@ const Header = () => {
             <span
               key={item?.path}
               onClick = {() => navigate(item?.path)}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-smooth group relative ${
+              className={`flex cursor-pointer items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-smooth group relative ${
                 location?.pathname === item?.path
                   ? 'text-accent bg-accent/10' :'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
