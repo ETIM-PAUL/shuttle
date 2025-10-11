@@ -8,8 +8,8 @@ import TransactionPreviewPanel from './components/TransactionPreviewPanel';
 import Icon from '../../components/AppIcon';
 import { useGlobal } from '../../context/global';
 import toast from 'react-hot-toast';
-import { protocols } from '../../utils/cn';
 import { connect } from "@starknet-io/get-starknet"
+import { parseUnits } from 'viem'
 
 import {getProviders, getProviderById, request} from "sats-connect";
 import {StarknetInitializer, StarknetInitializerType, StarknetSigner} from "@atomiqlabs/chain-starknet";
@@ -19,21 +19,32 @@ import {Transaction} from "@scure/btc-signer";
 
 
 const BridgeAndDeploy = () => {
+  
+  const {
+    isWalletConnected, 
+    handleGetWBTCBal,
+    walletAddress,
+    starknetAddress,
+    protocols
+  } = useGlobal();
+  
+  
   const [amount, setAmount] = useState('');
   const [selectedProtocol, setSelectedProtocol] = useState(null);
   const [isDeploying, setIsDeploying] = useState(false);
   const [showTransactionStatus, setShowTransactionStatus] = useState(false);
   const [transactionData, setTransactionData] = useState(null);
-
-  const {
-    isWalletConnected, 
-    handleGetWBTCBal,
-    walletAddress,
-    starknetAddress
-  } = useGlobal();
-
+  
+  
   const handleDeploy = async () => {
-    if (!amount || !selectedProtocol) return;
+    if (!amount) {
+      toast.error("Please enter amount greater than 0");
+      return;
+    }
+    if (!selectedProtocol) {
+      toast.error("Please select a protocol");
+      return;
+    }
     if (!isWalletConnected) {
       toast.error("Wallet not connected");
       return;
@@ -164,6 +175,7 @@ const BridgeAndDeploy = () => {
     setSelectedProtocol(null);
   };
 
+
   return (
     <>
       <Helmet>
@@ -243,9 +255,9 @@ const BridgeAndDeploy = () => {
                   </div>
 
                   <div className="grid grid-cols-1 gap-4">
-                    {protocols?.map((protocol) => (
+                    {protocols?.map((protocol,index) => (
                       <ProtocolSelectionCard
-                        key={protocol?.id}
+                        key={index}
                         protocol={protocol}
                         isSelected={selectedProtocol?.id === protocol?.id}
                         onSelect={setSelectedProtocol}
@@ -288,22 +300,25 @@ const BridgeAndDeploy = () => {
                   <h4 className="text-sm font-medium text-foreground mb-3">
                     Protocol Comparison
                   </h4>
-                  <div className="space-y-2">
-                    {protocols?.map((protocol) => (
-                      <div key={protocol?.id} className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">{protocol?.name}</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-foreground font-medium">{protocol?.apy}%</span>
-                          <span className={`px-1.5 py-0.5 rounded text-xs ${
-                            protocol?.risk === 'Low' ? 'bg-success/10 text-success' :
-                            protocol?.risk === 'Medium'? 'bg-warning/10 text-warning' : 'bg-error/10 text-error'
-                          }`}>
-                            {protocol?.risk}
-                          </span>
+
+                  {protocols &&
+                    <div className="space-y-2">
+                      {protocols?.map((protocol) => (
+                        <div key={protocol?.id} className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">{protocol?.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-foreground font-medium">{protocol?.apy}%</span>
+                            <span className={`px-1.5 py-0.5 rounded text-xs ${
+                              protocol?.risk === 'Low' ? 'bg-success/10 text-success' :
+                              protocol?.risk === 'Medium'? 'bg-warning/10 text-warning' : 'bg-error/10 text-error'
+                            }`}>
+                              {protocol?.risk}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  }
                 </div>
               </div>
             </div>

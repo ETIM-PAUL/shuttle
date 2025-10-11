@@ -1,5 +1,6 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
+import { useNavigate } from 'react-router-dom';
 
 const ProtocolSelectionCard = ({ 
   protocol, 
@@ -15,7 +16,7 @@ const ProtocolSelectionCard = ({
       case 'high':
         return 'text-error bg-error/10';
       default:
-        return 'text-muted-foreground bg-muted';
+        return 'text-white bg-muted';
     }
   };
 
@@ -29,6 +30,8 @@ const ProtocolSelectionCard = ({
         return 'DollarSign';
     }
   };
+
+  const navigate= useNavigate();
 
   return (
     <div
@@ -66,42 +69,42 @@ const ProtocolSelectionCard = ({
         <div>
           <div className="flex items-center space-x-1 mb-1">
             <Icon name="TrendingUp" size={14} className="text-accent" />
-            <span className="text-xs text-muted-foreground">Current APY</span>
+            <span className="text-xs text-muted-foreground">Current Interest Rate</span>
           </div>
           <span className="text-lg font-semibold text-foreground font-data">
-            {protocol?.apy}%
+            {protocol?.interestRate}%
           </span>
         </div>
         
         <div>
           <div className="flex items-center space-x-1 mb-1">
             <Icon name="Shield" size={14} className="text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Risk Level</span>
+            <span className="text-xs text-muted-foreground">Risk Detail</span>
           </div>
-          <span className={`text-xs px-2 py-1 rounded-full font-medium ${getRiskColor(protocol?.risk)}`}>
-            {protocol?.risk}
+          <span onClick={() => navigate(protocol?.risk)} className={`text-xs px-2 py-1 rounded-full font-medium ${getRiskColor(protocol?.risk)}`}>
+            {protocol?.risk.slice(0,15) + "..." + protocol?.risk.slice(20,30)}
           </span>
         </div>
       </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">TVL</span>
+          <span className="text-muted-foreground">Borrow APR</span>
           <span className="text-foreground font-medium">
-            ${protocol?.tvl}
+            {protocol?.borrowedApr} WBTC
           </span>
         </div>
         
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Min. Deposit</span>
+          <span className="text-muted-foreground">Reserves</span>
           <span className="text-foreground font-medium">
-            {protocol?.minDeposit} BTC
+            {protocol?.reserve} WBTC
           </span>
         </div>
         
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Lock Period</span>
+          <span className="text-muted-foreground">Max Utilization</span>
           <span className="text-foreground font-medium">
-            {protocol?.lockPeriod}
+            {protocol?.maxUtilization} WBTC
           </span>
         </div>
       </div>

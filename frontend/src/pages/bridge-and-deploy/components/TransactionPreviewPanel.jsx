@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { get_PreviewVesuDeposit } from '../../../utils/vesu_int';
 
 const TransactionPreviewPanel = ({ 
   amount, 
@@ -9,13 +10,24 @@ const TransactionPreviewPanel = ({
   isDeploying = false 
 }) => {
   const [fees, setFees] = useState({
-    bridgeFee: '0.00012',
-    networkFee: '0.00008',
     protocolFee: '0.00005'
   });
+  console.log("id", selectedProtocol);
   
   const [slippage, setSlippage] = useState(0.5);
   const [estimatedOutput, setEstimatedOutput] = useState('0.00000000');
+  const [vesuOutput, setVesuOutput] = useState('0.00000000');
+
+  useEffect(() => {
+    if (amount && selectedProtocol?.id !== "troves-vault") {
+      get_PreviewVesuDeposit(amount).then(result => {
+        setVesuOutput(result.formattedVal);
+      }).catch(error => {
+        console.error('Error fetching Vesu deposit preview:', error);
+        setVesuOutput('0.00000000');
+      });
+    }
+  }, [amount, selectedProtocol?.id]);
 
   useEffect(() => {
     if (amount && !isNaN(amount)) {
@@ -65,6 +77,7 @@ const TransactionPreviewPanel = ({
           <span className="text-sm text-muted-foreground">~15-45 min</span>
         </div>
       </div>
+
       {/* Transaction Flow */}
       <div className="space-y-3">
         {transactionSteps?.map((step, index) => (
@@ -89,27 +102,20 @@ const TransactionPreviewPanel = ({
           </div>
         ))}
       </div>
+
       {/* Fee Breakdown */}
       <div className="space-y-3 pt-4 border-t border-border">
         <h4 className="text-sm font-medium text-foreground">Fee Breakdown</h4>
         
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Bridge Fee</span>
-            <span className="text-foreground font-data">{fees?.bridgeFee} BTC</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Network Fee</span>
-            <span className="text-foreground font-data">{fees?.networkFee} BTC</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Protocol Fee</span>
-            <span className="text-foreground font-data">{fees?.protocolFee} BTC</span>
+            <span className="text-foreground font-data">{(amount * 0.05)} BTC</span>
           </div>
           <div className="flex items-center justify-between text-sm pt-2 border-t border-border">
             <span className="font-medium text-foreground">Total Fees</span>
             <span className="font-medium text-foreground font-data">
-              {totalFees?.toFixed(8)} BTC
+              {(Number(amount) + (amount * 0.05))} BTC
             </span>
           </div>
         </div>
@@ -143,14 +149,16 @@ const TransactionPreviewPanel = ({
           </div>
         </div>
       </div>
+
       {/* Expected Output */}
+      {(amount > 0 && selectedProtocol) &&
       <div className="bg-muted/50 rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div>
             <span className="text-sm text-muted-foreground">You will receive</span>
             <div className="flex items-center space-x-2 mt-1">
               <span className="text-lg font-semibold text-foreground font-data">
-                {estimatedOutput} WBTC
+                {selectedProtocol?.id === "troves-vault" ? "0.0101" : vesuOutput} {selectedProtocol?.id === "troves-vault" ? "WBTC" : "vWBTC"}
               </span>
               {selectedProtocol && (
                 <span className="text-sm text-accent">
@@ -167,6 +175,8 @@ const TransactionPreviewPanel = ({
           </div>
         </div>
       </div>
+      }
+
       {/* Deploy Button */}
       <Button
         variant="default"

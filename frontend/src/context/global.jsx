@@ -2,6 +2,8 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { checkXverseOnLoad, connectXverseWallet, getBtcBalance, getVesu_WBTC_Balance } from "../utils/xverse_handler";
 import toast from "react-hot-toast";
+import { getVesuGenesisDetails } from "../api";
+import { formatUnits } from 'viem'
 
 // Create the context
 const GlobalContext = createContext();
@@ -17,9 +19,25 @@ export const GlobalProvider = ({ children }) => {
     const [isInstalled, setIsInstalled] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [error, setError] = useState(null);
+    const [vesuGenesisPoolDetails, setVesuGenesisPoolDetails] = useState(null);
+    const [protocols, setProtocols] = useState(!!vesuGenesisPoolDetails ? [
+      {
+        id: 'troves-vault',
+        name: 'Troves Vault',
+        description: 'Automated yield farming with WBTC collateral',
+        type: 'vault',
+        apy: 12.45,
+        risk: 'Medium',
+        tvl: '45.2M',
+        minDeposit: '0.001',
+        lockPeriod: 'Flexible',
+        features: ['Auto-compound', 'Liquidity Mining', 'Governance Rewards']
+      }
+    ] : []);
   
     useEffect(() => {
       // Check if wallet is installed on component mount
+      handleGetVesuPoolDetails();
       checkXverseOnLoad((installed) => {
         setIsInstalled(installed);
       });
@@ -30,6 +48,30 @@ export const GlobalProvider = ({ children }) => {
       try {
           const res = await getVesu_WBTC_Balance(address);
           setWBTCBalance(res?.human);
+        } catch (error) {
+          console.log("error", error)
+      };
+    };
+
+    const handleGetVesuPoolDetails = async () => {
+      try {
+          const res = await getVesuGenesisDetails(); 
+          console.log("res", res);
+                   
+          setProtocols([...protocols, {
+            id: 'vesu-lending',
+            name: 'Vesu Lending',
+            description: 'Supply WBTC to earn lending interest',
+            type: 'lending',
+            borrowedApr: formatUnits(res?.stats?.borrowApr?.value, res?.stats?.borrowApr?.decimals),
+            interestRate: formatUnits(res?.interestRate?.value, res?.interestRate?.decimals),
+            reserve: formatUnits(res?.config?.reserve?.value, res?.config?.reserve?.decimals),
+            risk: res?.risk?.url,
+            totalSupplied: formatUnits(res?.stats?.totalSupplied?.value, (res?.stats?.totalSupplied?.decimals ?? 8)),
+            maxUtilization: formatUnits(res?.config?.maxUtilization?.value, (res?.config?.maxUtilization?.decimals ?? 8)),
+            lockPeriod: 'None',
+            features: ['Instant Withdrawal', 'Variable APY', 'Overcollateralized']
+          }]);
         } catch (error) {
           console.log("error", error)
       };
@@ -82,6 +124,7 @@ export const GlobalProvider = ({ children }) => {
     ordinalsAddress,
     setWalletAddress,
     isInstalled,
+    protocols,
     setIsInstalled,
     handleConnect,
     handleInstall,

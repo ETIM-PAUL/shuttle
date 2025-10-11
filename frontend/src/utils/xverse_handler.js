@@ -1,7 +1,7 @@
 // xverseWallet.ts
 import { request } from "sats-connect";
 import { RpcProvider, Contract } from 'starknet';
-import { formatUnits, uint256ToBigInt } from "./cn";
+import { formatUnits } from "./cn";
 
 const ERC20_ABI = [
   {
@@ -53,13 +53,6 @@ export const connectXverseWallet = async () => {
         error: 'Xverse wallet not installed. Redirecting to Chrome Web Store...'
       };
     }
-
-    // const xverse = window.XverseProviders.BitcoinProvider;
-    // // Request wallet connection
-    // const response = await xverse.request('getAccounts', {
-    //   purposes: ['payment', 'ordinals'],
-    //   message: 'Connect to your app'
-    // });
 
     try {
       const response = await request('wallet_connect', null);
