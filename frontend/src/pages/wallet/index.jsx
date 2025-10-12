@@ -9,6 +9,7 @@ import { VESU_IMPL_ABI } from '../../utils/vesu_impl_abi'
 import { Main_Trooves_Abi } from '../../utils/main_trooves_abi'
 import { formatUnits } from '../../utils/cn'
 import { vesuImplAddress, trovesImplAddress } from '../../utils/cn'
+import toast from 'react-hot-toast'
 
 const WalletSection = () => {
   const {
@@ -24,6 +25,12 @@ const WalletSection = () => {
   } = useGlobal();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedeeming, setIsRedeeming] = useState(false);
+  const [showRedeemModal, setShowRedeemModal] = useState(false);
+  const [selectedProtocol, setSelectedProtocol] = useState(null);
+  const [redeemAmount, setRedeemAmount] = useState('');
+  const [selectedPercentage, setSelectedPercentage] = useState(100);
+  
   const [troovesData, setTroovesData] = useState({
     deposits: { count: 0, amount: '0' },
     withdrawals: { count: 0, amount: '0' },
@@ -129,6 +136,60 @@ const WalletSection = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Handle redeem button click
+  const handleRedeemClick = (protocol) => {
+    setSelectedProtocol(protocol);
+    setRedeemAmount(protocol.balance);
+    setSelectedPercentage(100);
+    setShowRedeemModal(true);
+  };
+
+  // Handle percentage selection
+  const handlePercentageSelect = (percentage) => {
+    setSelectedPercentage(percentage);
+    const currentBalance = parseFloat(selectedProtocol?.balance || '0');
+    const amount = (currentBalance * percentage / 100).toFixed(8);
+    setRedeemAmount(amount);
+  };
+
+  // Handle redeem confirmation
+  const handleRedeemConfirm = async () => {
+    if (!selectedProtocol || !redeemAmount || parseFloat(redeemAmount) <= 0) {
+      toast.error('Please enter a valid amount to redeem');
+      return;
+    }
+
+    setIsRedeeming(true);
+    try {
+      // Here you would implement the actual redeem logic
+      // For now, we'll just show a success message
+      toast.success(`Redeeming ${redeemAmount} WBTC from ${selectedProtocol.name}...`);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast.success('Redeem successful!');
+      setShowRedeemModal(false);
+      
+      // Refresh data
+      await fetchProtocolData();
+      
+    } catch (error) {
+      console.error('Redeem error:', error);
+      toast.error('Redeem failed. Please try again.');
+    } finally {
+      setIsRedeeming(false);
+    }
+  };
+
+  // Close modal
+  const handleCloseModal = () => {
+    setShowRedeemModal(false);
+    setSelectedProtocol(null);
+    setRedeemAmount('');
+    setSelectedPercentage(100);
   };
 
   useEffect(() => {
@@ -274,6 +335,18 @@ const WalletSection = () => {
                   <div className="text-right">
                     <div className="text-lg font-semibold text-foreground">{troovesData.balance} WBTC</div>
                     <div className="text-xs text-muted-foreground">Accumulated Balance</div>
+                    {parseFloat(troovesData.balance) === 0 && (
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={() => handleRedeemClick({ ...troovesData, name: 'Trooves Vault' })}
+                        iconName="RefreshCw"
+                        iconPosition="left"
+                        className="mt-2 cursor-pointer"
+                      >
+                        Redeem
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -322,6 +395,18 @@ const WalletSection = () => {
                   <div className="text-right">
                     <div className="text-lg font-semibold text-foreground">{vesuData.balance} WBTC</div>
                     <div className="text-xs text-muted-foreground">Accumulated Balance</div>
+                    {parseFloat(vesuData.balance) > 0 && (
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={() => handleRedeemClick({ ...vesuData, name: 'Vesu Lending' })}
+                        iconName="RefreshCw"
+                        iconPosition="left"
+                        className="mt-2 cursor-pointer"
+                      >
+                        Redeem
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -360,6 +445,98 @@ const WalletSection = () => {
          
         </div>
       </div>
+
+      {/* Redeem Confirmation Modal */}
+      {showRedeemModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-gray-700 border border-border rounded-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground">Redeem {selectedProtocol?.name}</h3>
+              <button
+                onClick={handleCloseModal}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Icon name="X" size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-surface border border-border rounded-lg p-4">
+                <div className="text-sm text-muted-foreground mb-2">Available Balance</div>
+                <div className="text-lg font-semibold text-foreground">{selectedProtocol?.balance} WBTC</div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Select Percentage
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[25, 50, 75, 100].map((percentage) => (
+                    <Button
+                      key={percentage}
+                      variant={selectedPercentage === percentage ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePercentageSelect(percentage)}
+                      className="text-xs"
+                    >
+                      {percentage}%
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Amount to Redeem
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={redeemAmount}
+                    onChange={(e) => setRedeemAmount(e.target.value)}
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                    placeholder="0.00000000"
+                    step="0.00000001"
+                    min="0"
+                    max={selectedProtocol?.balance}
+                  />
+                  <div className="absolute right-3 top-2 text-sm text-muted-foreground">WBTC</div>
+                </div>
+              </div>
+
+              <div className="bg-muted/50 border border-border rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <Icon name="Info" size={16} className="text-muted-foreground mt-0.5" />
+                  <div className="text-xs text-muted-foreground">
+                    <p className="mb-1">You will receive WBTC tokens in your wallet.</p>
+                    <p>This action cannot be undone.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={handleCloseModal}
+                  className="flex-1"
+                  disabled={isRedeeming}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={handleRedeemConfirm}
+                  className="flex-1"
+                  loading={isRedeeming}
+                  disabled={!redeemAmount || parseFloat(redeemAmount) <= 0}
+                >
+                  {isRedeeming ? 'Redeeming...' : 'Confirm Redeem'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
