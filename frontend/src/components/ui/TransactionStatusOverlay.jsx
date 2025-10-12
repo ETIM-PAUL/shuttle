@@ -5,7 +5,8 @@ import Button from './Button';
 const TransactionStatusOverlay = ({ 
   isVisible = false, 
   onClose = () => {}, 
-  transactionData = null 
+  transactionData = null,
+  completedSteps = []
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -16,21 +17,21 @@ const TransactionStatusOverlay = ({
       title: 'Bridge Confirmation',
       description: 'Confirming Bitcoin transaction on network',
       icon: 'ArrowRightLeft',
-      estimatedTime: '10-30 minutes'
+      estimatedTime: '10-30 minutes',
     },
     {
       id: 'protocol_deployment',
       title: 'Protocol Deployment',
       description: 'Deploying to yield protocol on Starknet',
       icon: 'Rocket',
-      estimatedTime: '2-5 minutes'
+      estimatedTime: '2-5 minutes',
     },
     {
       id: 'yield_position',
       title: 'Yield Position Active',
       description: 'Your Bitcoin is now earning yield',
       icon: 'TrendingUp',
-      estimatedTime: 'Complete'
+      estimatedTime: 'Complete',
     }
   ];
 
@@ -51,9 +52,9 @@ const TransactionStatusOverlay = ({
     // }
   }, [isVisible, isCompleted]);
 
-  const getStepStatus = (stepIndex) => {
-    if (stepIndex < currentStep) return 'completed';
-    if (stepIndex === currentStep) return 'active';
+  const getStepStatus = (step) => {
+    if (completedSteps.includes(step?.id)) return 'completed';
+    if (step?.id === currentStep) return 'active';
     return 'pending';
   };
 
@@ -120,15 +121,15 @@ const TransactionStatusOverlay = ({
         {/* Progress Steps */}
         <div className="p-6 space-y-4">
           {transactionSteps?.map((step, index) => {
-            const status = getStepStatus(index);
+            const status = getStepStatus(step);
             const iconName = getStepIcon(step, status);
             const iconColor = getStepIconColor(status);
 
             return (
               <div key={index} className="flex items-start space-x-4">
                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                  status === 'completed' ? 'bg-success/10' :
-                  status === 'active' ? 'bg-accent/10' : 'bg-muted'
+                  status === false ? 'bg-success/10' :
+                  status === true ? 'bg-accent/10' : 'bg-muted'
                 }`}>
                   <Icon 
                     name={iconName} 
@@ -139,8 +140,8 @@ const TransactionStatusOverlay = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <h4 className={`text-sm font-medium ${
-                      status === 'completed' ? 'text-success' :
-                      status === 'active' ? 'text-foreground' : 'text-muted-foreground'
+                      status === false ? 'text-success' :
+                      status === true ? 'text-foreground' : 'text-muted-foreground'
                     }`}>
                       {step?.title}
                     </h4>

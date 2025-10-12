@@ -5,12 +5,12 @@ import Input from '../../../components/ui/Input';
 
 const BridgeInputPanel = ({ 
   amount, 
+  btcPrice,
   onAmountChange, 
   walletBalance = '0.12345678',
   isWalletConnected = true 
 }) => {
   const [usdValue, setUsdValue] = useState('0.00');
-  const [btcPrice] = useState(67420.50); // Mock BTC price
 
   useEffect(() => {
     if (amount && !isNaN(amount)) {

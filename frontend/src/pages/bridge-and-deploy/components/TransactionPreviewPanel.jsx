@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-import { get_PreviewVesuDeposit } from '../../../utils/vesu_int';
+import { get_PreviewDeposit } from '../../../utils/protocol_int';
 
 const TransactionPreviewPanel = ({ 
   amount, 
@@ -12,32 +12,21 @@ const TransactionPreviewPanel = ({
   const [fees, setFees] = useState({
     protocolFee: '0.00005'
   });
-  console.log("id", selectedProtocol);
   
   const [slippage, setSlippage] = useState(0.5);
-  const [estimatedOutput, setEstimatedOutput] = useState('0.00000000');
-  const [vesuOutput, setVesuOutput] = useState('0.00000000');
+  const [depositOutput, setDepositOutput] = useState('0.00000000');
 
   useEffect(() => {
-    if (amount && selectedProtocol?.id !== "troves-vault") {
-      get_PreviewVesuDeposit(amount).then(result => {
-        setVesuOutput(result.formattedVal);
+    if (amount && selectedProtocol?.id) {
+      get_PreviewDeposit(amount, selectedProtocol?.id).then(result => {
+        setDepositOutput(result.formattedVal);
       }).catch(error => {
         console.error('Error fetching Vesu deposit preview:', error);
-        setVesuOutput('0.00000000');
+        setDepositOutput('0.00000000');
       });
     }
   }, [amount, selectedProtocol?.id]);
 
-  useEffect(() => {
-    if (amount && !isNaN(amount)) {
-      const totalFees = parseFloat(fees?.bridgeFee) + parseFloat(fees?.networkFee) + parseFloat(fees?.protocolFee);
-      const output = (parseFloat(amount) - totalFees)?.toFixed(8);
-      setEstimatedOutput(Math.max(0, output));
-    } else {
-      setEstimatedOutput('0.00000000');
-    }
-  }, [amount, fees]);
 
   const transactionSteps = [
     {
@@ -158,7 +147,7 @@ const TransactionPreviewPanel = ({
             <span className="text-sm text-muted-foreground">You will receive</span>
             <div className="flex items-center space-x-2 mt-1">
               <span className="text-lg font-semibold text-foreground font-data">
-                {selectedProtocol?.id === "troves-vault" ? "0.0101" : vesuOutput} {selectedProtocol?.id === "troves-vault" ? "WBTC" : "vWBTC"}
+                {depositOutput} {selectedProtocol?.id === "troves-vault" ? "tWBTC-E" : "vWBTC"}
               </span>
               {selectedProtocol && (
                 <span className="text-sm text-accent">

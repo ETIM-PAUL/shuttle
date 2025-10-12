@@ -88,7 +88,7 @@ const Header = () => {
   );
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-100 bg-background border-b border-border">
+    <header className="fixed top-0 left-0 right-0 z-100 bg-gradient-to-b from-gray-500 to-black border-b border-border">
       <div className="flex items-center justify-between h-16 px-6">
         {/* Logo */}
         <div className="flex-shrink-0">

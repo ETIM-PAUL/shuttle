@@ -34,7 +34,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://api-testnet4.secretkeylabs.io',
+        target: 'https://api.secretkeylabs.io',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }

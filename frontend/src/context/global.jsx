@@ -2,7 +2,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { checkXverseOnLoad, connectXverseWallet, getBtcBalance, getVesu_WBTC_Balance } from "../utils/xverse_handler";
 import toast from "react-hot-toast";
-import { getVesuGenesisDetails } from "../api";
+import { getBtcPrice, getVesuGenesisDetails } from "../api";
 import { formatUnits } from 'viem'
 
 // Create the context
@@ -19,8 +19,8 @@ export const GlobalProvider = ({ children }) => {
     const [isInstalled, setIsInstalled] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [error, setError] = useState(null);
-    const [vesuGenesisPoolDetails, setVesuGenesisPoolDetails] = useState(null);
-    const [protocols, setProtocols] = useState(!!vesuGenesisPoolDetails ? [
+    const [btcPrice, setBtcPrice] = useState(null);
+    const [protocols, setProtocols] = useState([
       {
         id: 'troves-vault',
         name: 'Troves Vault',
@@ -33,10 +33,13 @@ export const GlobalProvider = ({ children }) => {
         lockPeriod: 'Flexible',
         features: ['Auto-compound', 'Liquidity Mining', 'Governance Rewards']
       }
-    ] : []);
+    ]);
   
     useEffect(() => {
       // Check if wallet is installed on component mount
+      getBtcPrice().then((res) =>
+        setBtcPrice(res?.rate)
+      );
       handleGetVesuPoolDetails();
       checkXverseOnLoad((installed) => {
         setIsInstalled(installed);
@@ -56,7 +59,6 @@ export const GlobalProvider = ({ children }) => {
     const handleGetVesuPoolDetails = async () => {
       try {
           const res = await getVesuGenesisDetails(); 
-          console.log("res", res);
                    
           setProtocols([...protocols, {
             id: 'vesu-lending',
@@ -116,6 +118,7 @@ export const GlobalProvider = ({ children }) => {
     isConnecting,
     setIsConnecting,
     btcBalance,
+    btcPrice,
     setBtcBalance,
     wBTCBalance,
     setWBTCBalance,

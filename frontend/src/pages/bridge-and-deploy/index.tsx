@@ -14,8 +14,10 @@ import { parseUnits } from 'viem'
 import {getProviders, getProviderById, request} from "sats-connect";
 import {StarknetInitializer, StarknetInitializerType, StarknetSigner} from "@atomiqlabs/chain-starknet";
 import {SwapperFactory, BitcoinNetwork, fromHumanReadableString, timeoutSignal} from "@atomiqlabs/sdk";
-import {RpcProvider, WalletAccount} from "starknet";
+import {Account, Contract, RpcProvider, wallet, WalletAccount} from "starknet";
 import {Transaction} from "@scure/btc-signer";
+import { VESU_IMPL_ABI } from '../../utils/vesu_impl_abi';
+import { trovesImplAddress, vesuImplAddress } from '../../utils/cn';
 
 
 const BridgeAndDeploy = () => {
@@ -25,32 +27,20 @@ const BridgeAndDeploy = () => {
     handleGetWBTCBal,
     walletAddress,
     starknetAddress,
-    protocols
+    btcBalance,
+    protocols,
+    btcPrice
   } = useGlobal();
   
   
   const [amount, setAmount] = useState('');
   const [selectedProtocol, setSelectedProtocol] = useState(null);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState([]);
   const [showTransactionStatus, setShowTransactionStatus] = useState(false);
   const [transactionData, setTransactionData] = useState(null);
   
-  
-  const handleDeploy = async () => {
-    if (!amount) {
-      toast.error("Please enter amount greater than 0");
-      return;
-    }
-    if (!selectedProtocol) {
-      toast.error("Please select a protocol");
-      return;
-    }
-    if (!isWalletConnected) {
-      toast.error("Wallet not connected");
-      return;
-    }
-  
-    setIsDeploying(true);
+  const handleBridgingBTC2WBTC = async () => {
 
     setTransactionData({
       amount: amount,
@@ -84,12 +74,12 @@ const BridgeAndDeploy = () => {
       const swo = await connect({
         modalMode: "alwaysAsk",
         modalTheme: "dark",
-        include: ["xverse"]
+        // include: ["xverse wallet"]
       });
 
       const starknetSigner = new StarknetSigner(await WalletAccount.connect(rpcProvider, swo));
       
-    setShowTransactionStatus(true);
+      setShowTransactionStatus(true);
       
       const _exactIn = true;
       const _amount = fromHumanReadableString(amount, Tokens.BITCOIN.BTC);
@@ -100,7 +90,7 @@ const BridgeAndDeploy = () => {
       // Create the swap
       const swap = await swapper.swap(
         Tokens.BITCOIN.BTC,
-        Tokens.STARKNET._TESTNET_WBTC_VESU,
+        Tokens.STARKNET.WBTC,
         _amount,
         _exactIn,
         undefined,
@@ -138,13 +128,6 @@ const BridgeAndDeploy = () => {
         null, null,
         (txId, confirmations, targetConfirmations, transactionETAms) => {
           console.log(`Transaction ${txId} has ${confirmations}/${targetConfirmations} confirmations`);
-          // setTransactionData(...transactionData, {
-          //   hash: txId,
-          //   steps: [...transactionData?.steps, {
-          //     title: `Transaction ${txId} has ${confirmations}/${targetConfirmations} confirmations`,
-          //     status: "active"
-          //   }]
-          // });
         }
       );
 
@@ -158,13 +141,121 @@ const BridgeAndDeploy = () => {
       }
   
       await handleGetWBTCBal(starknetAddress);
-      setIsDeploying(false);
-      setShowTransactionStatus(false);
+      setCompletedSteps([...completedSteps, "bridge_confirmation"])
       
     } catch (error) {
       console.error('Deploy error:', error);
-      toast.error(`Deploy failed: ${error.message}`);
+      toast.error(`Shuttle failed: ${error.message}`);
       setIsDeploying(false);
+    }
+  }
+  
+  async function handleVesuProtocolDeposit() {
+    try {      
+      const selectedWalletSWO = await connect({
+        modalMode: "alwaysAsk",
+        modalTheme: "dark"
+      });
+      const myWalletAccount = await WalletAccount.connect(
+        { nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-sepolia.public.blastapi.io/rpc/v0_8' },
+        selectedWalletSWO
+      );
+
+      const vesuCont = new Contract(VESU_IMPL_ABI, vesuImplAddress, myWalletAccount);
+    
+      await Promise.all([
+        vesuCont.approve_wbtc_for_vault(parseUnits(amount.toString(), 18)),
+      ]);
+      const [val] = await Promise.all([
+        vesuCont.deposit_to_vesu(parseUnits(amount.toString(), 18)),
+      ]);
+    
+    setCompletedSteps([...completedSteps, "protocol_deployment"])
+    
+    setTimeout(() => {
+      setCompletedSteps([...completedSteps, "yield_position"])
+    }, 1500);
+    
+    setTimeout(() => {
+      setIsDeploying(false);
+      setShowTransactionStatus(false);
+    }, 3000);
+
+    return {
+      formattedVal: formatUnits(val, 18),
+    };
+    } catch (error) {
+    toast.error(`Deposit failed: ${error.message}`);
+    }
+    
+  }
+
+  async function handleTrovesProtocolDeposit() {
+    try {
+      const selectedWalletSWO = await connect({
+        modalMode: "alwaysAsk",
+        modalTheme: "dark"
+      });
+      const myWalletAccount = await WalletAccount.connect(
+        { nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-sepolia.public.blastapi.io/rpc/v0_8' },
+        selectedWalletSWO
+      );
+
+      const vesuCont = new Contract(VESU_IMPL_ABI, trovesImplAddress, myWalletAccount);
+    
+      await Promise.all([
+        vesuCont.approve_wbtc_for_vault(parseUnits(amount.toString(), 18)),
+      ]);
+      const [val] = await Promise.all([
+        vesuCont.deposit_to_vesu(parseUnits(amount.toString(), 18)),
+      ]);
+    
+    setCompletedSteps([...completedSteps, "protocol_deployment"])
+    
+    setTimeout(() => {
+      setCompletedSteps([...completedSteps, "yield_position"])
+    }, 1500);
+    
+    setTimeout(() => {
+      setIsDeploying(false);
+      setShowTransactionStatus(false);
+    }, 3000);
+
+    return {
+      formattedVal: formatUnits(val, 18),
+    };
+    } catch (error) {
+    toast.error(`Deposit failed: ${error.message}`);
+    }
+    
+  }
+
+  const handleDeploy = async () => {
+    if (!isWalletConnected) {
+      toast.error("Wallet not connected");
+      return;
+    }
+    if (!amount) {
+      toast.error("Please enter amount greater than 0");
+      return;
+    }
+    if (!selectedProtocol) {
+      toast.error("Please select a protocol");
+      return;
+    }
+
+    setIsDeploying(true);
+    try {
+      await handleBridgingBTC2WBTC().then(async(res) => {
+        if (selectedProtocol?.id === "troves-vault") {
+          handleTrovesProtocolDeposit();
+        } else {
+          await handleVesuProtocolDeposit();
+        }
+      }
+      );
+    } catch (error) {
+      console.error('Deploy error:', error);
     }
   };
 
@@ -237,8 +328,9 @@ const BridgeAndDeploy = () => {
                 {/* Bridge Input Panel */}
                 <BridgeInputPanel
                   amount={amount}
+                  btcPrice={btcPrice}
                   onAmountChange={setAmount}
-                  walletBalance="0.12345678"
+                  walletBalance={btcBalance}
                   isWalletConnected={true}
                 />
 
@@ -330,6 +422,7 @@ const BridgeAndDeploy = () => {
           isVisible={showTransactionStatus}
           onClose={handleTransactionClose}
           transactionData={transactionData}
+          completedSteps={completedSteps}
         />
       </div>
     </>
@@ -337,7 +430,3 @@ const BridgeAndDeploy = () => {
 };
 
 export default BridgeAndDeploy;
-// https://btc-testnet4.xverse.app
-// https://mempool.space/testnet4/api
-// 0.01479414
-// 0.00143706
