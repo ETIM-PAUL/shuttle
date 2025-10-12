@@ -43,12 +43,12 @@ const Header = () => {
       icon: 'Rocket',
       tooltip: 'Bridge Bitcoin and deploy to yield protocols'
     },
-    {
-      label: 'History',
-      path: '/transaction-history',
-      icon: 'History',
-      tooltip: 'View transaction history and portfolio performance'
-    },
+    // {
+    //   label: 'History',
+    //   path: '/transaction-history',
+    //   icon: 'History',
+    //   tooltip: 'View transaction history and portfolio performance'
+    // },
     {
       label: 'Wallet',
       path: '/wallet',
