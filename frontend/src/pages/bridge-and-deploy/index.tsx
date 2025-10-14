@@ -21,6 +21,7 @@ import { mainTrovesAddress, mainVesuAddress, trovesImplAddress, vesuImplAddress,
 import { Main_Vesu_Abi } from '../../utils/main_vesu_abi';
 import { Main_Trooves_Abi } from '../../utils/main_trooves_abi';
 import { WBTC_abi } from '../../utils/main_wbtc_abi';
+import { useEffect } from 'react';
 
 
 const BridgeAndDeploy = () => {
@@ -39,14 +40,28 @@ const BridgeAndDeploy = () => {
   const [amount, setAmount] = useState('');
   const [selectedProtocol, setSelectedProtocol] = useState(null);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [getingAtomiqOutput, setGettingAtomiqOutput] = useState(false);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [showTransactionStatus, setShowTransactionStatus] = useState(false);
   const [transactionData, setTransactionData] = useState(null);
+  const [atomiqOutput, setAtomiqOutput] = useState(null);
   
   const rpcProvider = new RpcProvider({
     nodeUrl: import.meta.env.VITE_STARKNET_RPC
   });
 
+  const Factory = new SwapperFactory<[StarknetInitializerType]>([StarknetInitializer]);
+  const Tokens = Factory.Tokens;
+
+  const swapper = Factory.newSwapper({
+    chains: {
+      STARKNET: {
+        rpcUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-mainnet.public.blastapi.io/rpc/v0_8'
+      }
+    },
+    bitcoinNetwork: BitcoinNetwork.MAINNET,
+  });
+      
   const handleBridgingBTC2WBTC = async () => {
 
     setTransactionData({
@@ -56,18 +71,9 @@ const BridgeAndDeploy = () => {
     });
   
     try {
-      const Factory = new SwapperFactory<[StarknetInitializerType]>([StarknetInitializer]);
-      const Tokens = Factory.Tokens;
 
-      const swapper = Factory.newSwapper({
-        chains: {
-          STARKNET: {
-            rpcUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-mainnet.public.blastapi.io/rpc/v0_8'
-          }
-        },
-        bitcoinNetwork: BitcoinNetwork.MAINNET,
-      });
-      
+      await swapper.init();
+
       // const swo = await connect();
       if (!isWalletConnected) {
         throw new Error('Failed to connect to wallet');
@@ -90,9 +96,8 @@ const BridgeAndDeploy = () => {
       
       const _exactIn = true;
       const _amount = fromHumanReadableString(amount, Tokens.BITCOIN.BTC);
-      console.log("_amount", _amount)
+
       
-      await swapper.init();
       
       // Create the swap
       const swap = await swapper.swap(
@@ -175,11 +180,11 @@ const BridgeAndDeploy = () => {
       // Prepare calls using contract instances
       const approveCall = wbtcCont.populate('approve', {
         spender: mainVesuAddress,
-        amount: parseUnits("0.00001931", 8),
+        amount: parseUnits(atomiqOutput, 8),
       });
 
       const transferCall = vesuCont.populate('deposit', {
-        assets: parseUnits("0.00001931", 8),
+        assets: parseUnits(atomiqOutput, 8),
         receiver: starknetAddress,
       });
 
@@ -223,11 +228,11 @@ const BridgeAndDeploy = () => {
       // Prepare calls using contract instances
       const approveCall = wbtcCont.populate('approve', {
         spender: mainTrovesAddress,
-        amount: parseUnits("0.00001", 8),
+        amount: parseUnits(atomiqOutput, 8),
       });
 
       const transferCall = trovesCont.populate('deposit', {
-        assets: parseUnits("0.00001", 8),
+        assets: parseUnits(atomiqOutput, 8),
         receiver: starknetAddress,
       });
 
@@ -271,18 +276,52 @@ const BridgeAndDeploy = () => {
 
     setIsDeploying(true);
     try {
-      // await handleBridgingBTC2WBTC().then(async(res) => {
+      await handleBridgingBTC2WBTC().then(async(res) => {
         if (selectedProtocol?.id === "troves-vault") {
           handleTrovesProtocolDeposit();
         } else {
           await handleVesuProtocolDeposit();
         }
-      // }
-      // );
+      }
+      );
     } catch (error) {
       console.error('Deploy error:', error);
     }
   };
+
+  async function handleWBTCOutput () {
+    try {
+      setGettingAtomiqOutput(true);
+      const _exactIn = true;
+      const _amount = fromHumanReadableString(amount, Tokens.BITCOIN.BTC);
+
+      await swapper.init();
+
+      const swap = await swapper.swap(
+        Tokens.BITCOIN.BTC,
+        Tokens.STARKNET.WBTC,
+        _amount,
+        _exactIn,
+        undefined,
+        starknetAddress,
+        {
+          // gasAmount: 1_000_000_000_000_000_000n
+        }
+      );
+
+    console.log("out", swap.getOutput().toString());
+
+    setAtomiqOutput(swap.getOutput().toString());
+    if (swap.getOutput().toString()) {
+      setGettingAtomiqOutput(false);
+    }
+
+    } catch (error) {
+      setGettingAtomiqOutput(false);
+    toast.error(`Output failed: ${error.message}`);
+    }
+    
+  }
 
   const handleTransactionClose = () => {
     setShowTransactionStatus(false);
@@ -290,6 +329,13 @@ const BridgeAndDeploy = () => {
     setAmount('');
     setSelectedProtocol(null);
   };
+
+  useEffect(() => {
+    if (amount > 0) {
+      handleWBTCOutput();
+    }
+  }, [amount])
+  
 
 
   return (
@@ -389,6 +435,8 @@ const BridgeAndDeploy = () => {
               <div className="space-y-6">
                 <TransactionPreviewPanel
                   amount={amount}
+                  atomiqOutput={atomiqOutput}
+                  getingAtomiqOutput={getingAtomiqOutput}
                   selectedProtocol={selectedProtocol}
                   onDeploy={handleDeploy}
                   isDeploying={isDeploying}

@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { get_PreviewDeposit } from '../../../utils/protocol_int';
+import { useGlobal } from '../../../context/global';
 
 const TransactionPreviewPanel = ({ 
   amount, 
+  atomiqOutput,
+  getingAtomiqOutput,
   selectedProtocol, 
   onDeploy,
   isDeploying = false 
@@ -12,6 +15,10 @@ const TransactionPreviewPanel = ({
   const [fees, setFees] = useState({
     protocolFee: '0.00005'
   });
+
+  const {
+    isWalletConnected
+  } = useGlobal();
   
   const [slippage, setSlippage] = useState(0.5);
   const [depositOutput, setDepositOutput] = useState('0.00000000');
@@ -19,7 +26,6 @@ const TransactionPreviewPanel = ({
   useEffect(() => {
     if (amount && selectedProtocol?.id) {
       get_PreviewDeposit(amount, selectedProtocol?.id).then(result => {
-console.log("val", result)
 
         setDepositOutput(result.formattedVal);
       }).catch(error => {
@@ -142,11 +148,39 @@ console.log("val", result)
       </div>
 
       {/* Expected Output */}
+      {(getingAtomiqOutput) &&
+      <div className="bg-muted/50 rounded-lg">
+          <div className="text-left mt-3">
+            <span className="text-sm text-red-500">Fetching swap output...</span>
+          </div>
+      </div>
+      }
+
+      {(amount > 0 && isWalletConnected && !getingAtomiqOutput) &&
+      <div className="bg-muted/50 rounded-lg">
+        <div className="">
+          <div>
+            <span className="text-sm text-muted-foreground">You will receive after swapping</span>
+            <div className="flex items-center space-x-2 mt-1">
+              <span className="text-lg font-semibold text-foreground font-data">
+                {atomiqOutput}
+              </span>
+            </div>
+          </div>
+          {!selectedProtocol &&
+          <div className="text-left mt-3">
+            <span className="text-sm text-red-500">Select a protocol to see the protocol assets amount you will receive</span>
+          </div>
+          }
+        </div>
+      </div>
+      }
+      
       {(amount > 0 && selectedProtocol) &&
-      <div className="bg-muted/50 rounded-lg p-4">
+      <div className="bg-muted/50 rounded-lg">
         <div className="block items-center justify-between">
           <div>
-            <span className="text-sm text-muted-foreground">You will receive</span>
+            <span className="text-sm text-muted-foreground">You will receive after deposit</span>
             <div className="flex items-center space-x-2 mt-1">
               <span className="text-lg font-semibold text-foreground font-data">
                 {depositOutput} {selectedProtocol?.id === "troves-vault" ? "tWBTC-E" : "vWBTC-Re7xBTC"}
