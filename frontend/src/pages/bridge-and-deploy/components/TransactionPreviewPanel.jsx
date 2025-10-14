@@ -176,7 +176,7 @@ const TransactionPreviewPanel = ({
       </div>
       }
       
-      {(amount > 0 && selectedProtocol) &&
+      {(amount > 0 && selectedProtocol && !getingAtomiqOutput) &&
       <div className="bg-muted/50 rounded-lg">
         <div className="block items-center justify-between">
           <div>
@@ -208,13 +208,13 @@ const TransactionPreviewPanel = ({
         size="lg"
         fullWidth
         onClick={onDeploy}
-        disabled={isDeploying}
+        disabled={isDeploying || getingAtomiqOutput}
         loading={isDeploying}
         iconName="Rocket"
         iconPosition="left"
-        className="mt-6 bg-gray-600 hover:bg-gray-700 disabled:cursor-not-allowed"
+        className="mt-6 bg-gray-600 hover:bg-gray-700 cursor-pointer disabled:cursor-not-allowed"
       >
-        {isDeploying ? 'Deploying...' : selectedProtocol?.id === "troves-vault" ? 'Shuttle Yield Farming' : 'Shuttle Lending Interest '}
+        {isDeploying ? 'Shuttling...' : selectedProtocol?.id === "troves-vault" ? 'Shuttle Yield Farming' : 'Shuttle Lending Interest '}
       </Button>
       {/* {!canDeploy && amount && parseFloat(amount) > 0 && (
         <div className="flex items-center space-x-2 p-3 bg-warning/10 border border-warning/20 rounded-md">
