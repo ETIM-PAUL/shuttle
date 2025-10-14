@@ -141,8 +141,8 @@ export const getBtcBalance = async (address) => {
 };
 
 export async function getVesu_WBTC_Balance(userAddress) {
-  const provider = new RpcProvider({ nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-sepolia.public.blastapi.io' });
-  const tokenAddress = "0x04861ba938aed21f2cd7740acd3765ac4d2974783a3218367233de0153490cb6";
+  const provider = new RpcProvider({ nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-mainnet.public.blastapi.io' });
+  const tokenAddress = "0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac";
   const erc20 = new Contract(ERC20_ABI, tokenAddress, provider);
 
   const [balanceRes, decimalsRes] = await Promise.all([

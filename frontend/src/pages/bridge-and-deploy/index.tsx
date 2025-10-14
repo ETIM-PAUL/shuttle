@@ -14,10 +14,13 @@ import { parseUnits } from 'viem'
 import {getProviders, getProviderById, request} from "sats-connect";
 import {StarknetInitializer, StarknetInitializerType, StarknetSigner} from "@atomiqlabs/chain-starknet";
 import {SwapperFactory, BitcoinNetwork, fromHumanReadableString, timeoutSignal} from "@atomiqlabs/sdk";
-import {Account, Contract, RpcProvider, wallet, WalletAccount} from "starknet";
+import {Account, CallData, Contract, RpcProvider, wallet, WalletAccount} from "starknet";
 import {Transaction} from "@scure/btc-signer";
 import { VESU_IMPL_ABI } from '../../utils/vesu_impl_abi';
-import { trovesImplAddress, vesuImplAddress } from '../../utils/cn';
+import { mainTrovesAddress, mainVesuAddress, trovesImplAddress, vesuImplAddress, wbtcAddress } from '../../utils/cn';
+import { Main_Vesu_Abi } from '../../utils/main_vesu_abi';
+import { Main_Trooves_Abi } from '../../utils/main_trooves_abi';
+import { WBTC_abi } from '../../utils/main_wbtc_abi';
 
 
 const BridgeAndDeploy = () => {
@@ -40,6 +43,10 @@ const BridgeAndDeploy = () => {
   const [showTransactionStatus, setShowTransactionStatus] = useState(false);
   const [transactionData, setTransactionData] = useState(null);
   
+  const rpcProvider = new RpcProvider({
+    nodeUrl: import.meta.env.VITE_STARKNET_RPC
+  });
+
   const handleBridgingBTC2WBTC = async () => {
 
     setTransactionData({
@@ -55,10 +62,10 @@ const BridgeAndDeploy = () => {
       const swapper = Factory.newSwapper({
         chains: {
           STARKNET: {
-            rpcUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-sepolia.public.blastapi.io'
+            rpcUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-mainnet.public.blastapi.io/rpc/v0_8'
           }
         },
-        bitcoinNetwork: BitcoinNetwork.TESTNET,
+        bitcoinNetwork: BitcoinNetwork.MAINNET,
       });
       
       // const swo = await connect();
@@ -68,7 +75,7 @@ const BridgeAndDeploy = () => {
       
       // // Create RPC provider first
       const rpcProvider = new RpcProvider({
-        nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-sepolia.public.blastapi.io/rpc/v0_8'
+        nodeUrl: import.meta.env.VITE_STARKNET_RPC
       });
       
       const swo = await connect({
@@ -156,19 +163,30 @@ const BridgeAndDeploy = () => {
         modalMode: "alwaysAsk",
         modalTheme: "dark"
       });
+
       const myWalletAccount = await WalletAccount.connect(
-        { nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-sepolia.public.blastapi.io/rpc/v0_8' },
+        { nodeUrl: import.meta.env.VITE_STARKNET_RPC},
         selectedWalletSWO
       );
 
-      const vesuCont = new Contract(VESU_IMPL_ABI, vesuImplAddress, myWalletAccount);
+      const wbtcCont = new Contract(WBTC_abi, wbtcAddress, myWalletAccount);
+      const vesuCont = new Contract(Main_Vesu_Abi, mainVesuAddress, myWalletAccount);
     
-      await Promise.all([
-        vesuCont.approve_wbtc_for_vault(parseUnits(amount.toString(), 18)),
-      ]);
-      const [val] = await Promise.all([
-        vesuCont.deposit_to_vesu(parseUnits(amount.toString(), 18)),
-      ]);
+      // Prepare calls using contract instances
+      const approveCall = wbtcCont.populate('approve', {
+        spender: mainVesuAddress,
+        amount: parseUnits("0.00001931", 8),
+      });
+
+      const transferCall = vesuCont.populate('deposit', {
+        assets: parseUnits("0.00001931", 8),
+        receiver: starknetAddress,
+      });
+
+      // Execute both calls in one transaction
+      const tx = await myWalletAccount.execute([approveCall, transferCall]);
+      
+      await rpcProvider.waitForTransaction(tx.transaction_hash);
     
     setCompletedSteps([...completedSteps, "protocol_deployment"])
     
@@ -181,10 +199,8 @@ const BridgeAndDeploy = () => {
       setShowTransactionStatus(false);
     }, 3000);
 
-    return {
-      formattedVal: formatUnits(val, 18),
-    };
     } catch (error) {
+      setIsDeploying(false);
     toast.error(`Deposit failed: ${error.message}`);
     }
     
@@ -197,18 +213,28 @@ const BridgeAndDeploy = () => {
         modalTheme: "dark"
       });
       const myWalletAccount = await WalletAccount.connect(
-        { nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-sepolia.public.blastapi.io/rpc/v0_8' },
+        { nodeUrl: import.meta.env.VITE_STARKNET_RPC },
         selectedWalletSWO
       );
 
-      const vesuCont = new Contract(VESU_IMPL_ABI, trovesImplAddress, myWalletAccount);
+      const wbtcCont = new Contract(WBTC_abi, wbtcAddress, myWalletAccount);
+      const trovesCont = new Contract(Main_Trooves_Abi, mainTrovesAddress, myWalletAccount);
     
-      await Promise.all([
-        vesuCont.approve_wbtc_for_vault(parseUnits(amount.toString(), 18)),
-      ]);
-      const [val] = await Promise.all([
-        vesuCont.deposit_to_vesu(parseUnits(amount.toString(), 18)),
-      ]);
+      // Prepare calls using contract instances
+      const approveCall = wbtcCont.populate('approve', {
+        spender: mainTrovesAddress,
+        amount: parseUnits("0.00001", 8),
+      });
+
+      const transferCall = trovesCont.populate('deposit', {
+        assets: parseUnits("0.00001", 8),
+        receiver: starknetAddress,
+      });
+
+      // Execute both calls in one transaction
+      const tx = await myWalletAccount.execute([approveCall, transferCall]);
+      
+      await rpcProvider.waitForTransaction(tx.transaction_hash);
     
     setCompletedSteps([...completedSteps, "protocol_deployment"])
     
@@ -221,10 +247,9 @@ const BridgeAndDeploy = () => {
       setShowTransactionStatus(false);
     }, 3000);
 
-    return {
-      formattedVal: formatUnits(val, 18),
-    };
+    toast.success("Assets deposit to Trooves Yield Protocol");
     } catch (error) {
+      setIsDeploying(false);
     toast.error(`Deposit failed: ${error.message}`);
     }
     
@@ -246,14 +271,14 @@ const BridgeAndDeploy = () => {
 
     setIsDeploying(true);
     try {
-      await handleBridgingBTC2WBTC().then(async(res) => {
+      // await handleBridgingBTC2WBTC().then(async(res) => {
         if (selectedProtocol?.id === "troves-vault") {
           handleTrovesProtocolDeposit();
         } else {
           await handleVesuProtocolDeposit();
         }
-      }
-      );
+      // }
+      // );
     } catch (error) {
       console.error('Deploy error:', error);
     }

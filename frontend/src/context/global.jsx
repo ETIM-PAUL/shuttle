@@ -59,12 +59,13 @@ export const GlobalProvider = ({ children }) => {
     const handleGetVesuPoolDetails = async () => {
       try {
           const res = await getVesuGenesisDetails(); 
-                   
+                   console.log("r",res)
           setProtocols([...protocols, {
             id: 'vesu-lending',
             name: 'Vesu Lending',
             description: 'Supply WBTC to earn lending interest',
             type: 'lending',
+            supplyApy: formatUnits(res?.stats?.supplyApy?.value, res?.stats?.supplyApy?.decimals),
             borrowedApr: formatUnits(res?.stats?.borrowApr?.value, res?.stats?.borrowApr?.decimals),
             interestRate: formatUnits(res?.interestRate?.value, res?.interestRate?.decimals),
             reserve: formatUnits(res?.config?.reserve?.value, res?.config?.reserve?.decimals),

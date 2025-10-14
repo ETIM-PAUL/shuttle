@@ -7,9 +7,11 @@ import Header from '../../components/ui/Header'
 import { RpcProvider, Contract } from 'starknet'
 import { VESU_IMPL_ABI } from '../../utils/vesu_impl_abi'
 import { Main_Trooves_Abi } from '../../utils/main_trooves_abi'
-import { formatUnits } from '../../utils/cn'
+import { mainTrovesAddress, mainVesuAddress } from '../../utils/cn'
 import { vesuImplAddress, trovesImplAddress } from '../../utils/cn'
 import toast from 'react-hot-toast'
+import { Main_Vesu_Abi } from '../../utils/main_vesu_abi'
+import { formatUnits } from 'viem'
 
 const WalletSection = () => {
   const {
@@ -79,56 +81,54 @@ const WalletSection = () => {
     setIsLoading(true);
     try {
       const provider = new RpcProvider({ 
-        nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-sepolia.public.blastapi.io' 
+        nodeUrl: import.meta.env.VITE_STARKNET_RPC
       });
 
       // Fetch Vesu data
-      const vesuContract = new Contract(VESU_IMPL_ABI, vesuImplAddress, provider);
-      const [vesuDeposited, vesuWithdrawn, vesuRedeemed] = await Promise.all([
-        vesuContract.get_user_total_deposited(starknetAddress),
-        vesuContract.get_user_total_withdrawn(starknetAddress),
-        vesuContract.get_user_total_redeemed(starknetAddress)
+      const vesuContract = new Contract(Main_Vesu_Abi, mainVesuAddress, provider);
+      const [vesuBalance] = await Promise.all([
+        vesuContract.balance_of(starknetAddress)
       ]);
 
       // For Trooves, we'll use the same implementation for now
       // In a real scenario, you'd have a separate Trooves implementation contract
-      const troovesContract = new Contract(VESU_IMPL_ABI, trovesImplAddress, provider);
-      const [troovesDeposited, troovesWithdrawn, troovesRedeemed] = await Promise.all([
-        troovesContract.get_user_total_deposited(starknetAddress),
-        troovesContract.get_user_total_withdrawn(starknetAddress),
-        troovesContract.get_user_total_redeemed(starknetAddress)
+      const troovesContract = new Contract(Main_Trooves_Abi, mainTrovesAddress, provider);
+      const [trovesBalance] = await Promise.all([
+        troovesContract.balance_of(starknetAddress),
       ]);
+
+      console.log(vesuBalance)
 
       setVesuData({
         deposits: { 
-          count: vesuDeposited > 0 ? 1 : 0, // Simplified - in reality you'd track individual transactions
-          amount: formatUnits(vesuDeposited, 8) 
+          count: vesuBalance > 0 ? 1 : 0, // Simplified - in reality you'd track individual transactions
+          amount: formatUnits(vesuBalance, 18) 
         },
         withdrawals: { 
-          count: vesuWithdrawn > 0 ? 1 : 0,
-          amount: formatUnits(vesuWithdrawn, 8) 
+          count: 0,
+          amount: formatUnits(vesuBalance, 8) 
         },
         redemptions: { 
-          count: vesuRedeemed > 0 ? 1 : 0,
-          amount: formatUnits(vesuRedeemed, 8) 
+          count: 0,
+          amount: 0 
         },
-        balance: formatUnits(vesuDeposited - vesuWithdrawn - vesuRedeemed, 8)
+        balance: formatUnits(vesuBalance, 18)
       });
 
       setTroovesData({
         deposits: { 
-          count: troovesDeposited > 0 ? 1 : 0,
-          amount: formatUnits(troovesDeposited, 8) 
+          count:  0,
+          amount: 0
         },
         withdrawals: { 
-          count: troovesWithdrawn > 0 ? 1 : 0,
-          amount: formatUnits(troovesWithdrawn, 8) 
+          count:  0,
+          amount: 0 
         },
         redemptions: { 
-          count: troovesRedeemed > 0 ? 1 : 0,
-          amount: formatUnits(troovesRedeemed, 8) 
+          count: 0,
+          amount: 0 
         },
-        balance: formatUnits(troovesDeposited - troovesWithdrawn - troovesRedeemed, 8)
+        balance: formatUnits(trovesBalance, 18)
       });
 
     } catch (error) {
@@ -333,7 +333,7 @@ const WalletSection = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-semibold text-foreground">{troovesData.balance} WBTC</div>
+                    <div className="text-lg font-semibold text-foreground">{troovesData.balance} tWBTC-E</div>
                     <div className="text-xs text-muted-foreground">Accumulated Balance</div>
                     {parseFloat(troovesData.balance) === 0 && (
                       <Button
@@ -393,7 +393,7 @@ const WalletSection = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-semibold text-foreground">{vesuData.balance} WBTC</div>
+                    <div className="text-lg font-semibold text-foreground">{vesuData.balance} vWBTC-Re7xBTC</div>
                     <div className="text-xs text-muted-foreground">Accumulated Balance</div>
                     {parseFloat(vesuData.balance) > 0 && (
                       <Button

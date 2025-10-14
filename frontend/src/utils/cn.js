@@ -5,8 +5,11 @@ export function cn(...inputs) {
     return twMerge(clsx(inputs));
 }
 
-export const vesuImplAddress = "0x01324c38f5cd26a0eedd10901f22fbdb82934e30728aed88845423bbfb605d6e"
-export const trovesImplAddress = "0x01324c38f5cd26a0eedd10901f22fbdb82934e30728aed88845423bbfb605d6e"
+export const mainVesuAddress = "0x0131cc09160f144ec5880a0bc1a0633999030fa6a546388b5d0667cb171a52a0"
+export const mainTrovesAddress = "0x05a4c1651b913aa2ea7afd9024911603152a19058624c3e425405370d62bf80c"
+export const wbtcAddress = "0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac"
+export const vesuImplAddress = "0x06027da5b39c337855be24cce5c441de4f218179510d28d20c0f6254e07e0b7c"
+export const trovesImplAddress = "0x05a4c1651b913aa2ea7afd9024911603152a19058624c3e425405370d62bf80c"
 
 // Mock protocol data
 export const protocols = [

@@ -81,16 +81,16 @@ const ProtocolSelectionCard = ({
             <Icon name="Shield" size={14} className="text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Risk Detail</span>
           </div>
-          <span onClick={() => navigate(protocol?.risk)} className={`text-xs px-2 py-1 rounded-full font-medium ${getRiskColor(protocol?.risk)}`}>
-            {protocol?.risk.slice(0,15) + "..." + protocol?.risk.slice(20,30)}
+          <span onClick={() => navigate(protocol?.risk)} className={`text-xs px-2 py-1 rounded-full font-medium ${getRiskColor("medium")}`}>
+           medium
           </span>
         </div>
       </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Borrow APR</span>
+          <span className="text-muted-foreground">Supply APR</span>
           <span className="text-foreground font-medium">
-            {protocol?.borrowedApr} WBTC
+            {protocol?.supplyApy} WBTC
           </span>
         </div>
         

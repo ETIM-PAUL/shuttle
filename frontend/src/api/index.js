@@ -44,19 +44,16 @@ export const getBtcPrice = async () => {
 
 export const getVesuGenesisDetails = async () => {
     try {
-        const response = await fetch(`https://dev.api.vesu.xyz/pools/566154675190438152544449762131613456939576463701265245209877893089848934391`, {
+        const response = await fetch(`https://staging.api.vesu.xyz/pools`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
         });
     
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-    
         const data = await response.json();
-        return data?.data?.assets?.[3];
+        console.log("d",data?.data?.[15]?.assets[8])
+        return data?.data?.[15]?.assets[8];
       } catch (error) {
         console.error('Error fetching data:', error);
         throw error;

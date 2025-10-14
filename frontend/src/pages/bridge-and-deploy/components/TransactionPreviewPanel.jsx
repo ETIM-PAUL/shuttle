@@ -19,6 +19,8 @@ const TransactionPreviewPanel = ({
   useEffect(() => {
     if (amount && selectedProtocol?.id) {
       get_PreviewDeposit(amount, selectedProtocol?.id).then(result => {
+console.log("val", result)
+
         setDepositOutput(result.formattedVal);
       }).catch(error => {
         console.error('Error fetching Vesu deposit preview:', error);
@@ -142,21 +144,21 @@ const TransactionPreviewPanel = ({
       {/* Expected Output */}
       {(amount > 0 && selectedProtocol) &&
       <div className="bg-muted/50 rounded-lg p-4">
-        <div className="flex items-center justify-between">
+        <div className="block items-center justify-between">
           <div>
             <span className="text-sm text-muted-foreground">You will receive</span>
             <div className="flex items-center space-x-2 mt-1">
               <span className="text-lg font-semibold text-foreground font-data">
-                {depositOutput} {selectedProtocol?.id === "troves-vault" ? "tWBTC-E" : "vWBTC"}
+                {depositOutput} {selectedProtocol?.id === "troves-vault" ? "tWBTC-E" : "vWBTC-Re7xBTC"}
               </span>
               {selectedProtocol && (
-                <span className="text-sm text-accent">
+                <span className="text-sm text-accent hidden">
                   → {selectedProtocol?.name}
                 </span>
               )}
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-right hidden">
             <span className="text-sm text-muted-foreground">Expected APY</span>
             <div className="text-lg font-semibold text-success">
               {selectedProtocol?.apy || '0.00'}%
