@@ -9,6 +9,7 @@ const TransactionPreviewPanel = ({
   atomiqOutput,
   getingAtomiqOutput,
   selectedProtocol, 
+  selectedPool,
   onDeploy,
   isDeploying = false 
 }) => {
@@ -25,7 +26,7 @@ const TransactionPreviewPanel = ({
 
   useEffect(() => {
     if (amount && selectedProtocol?.id) {
-      get_PreviewDeposit(amount, selectedProtocol?.id).then(result => {
+      get_PreviewDeposit(amount, selectedProtocol?.id, selectedPool).then(result => {
 
         setDepositOutput(result.formattedVal);
       }).catch(error => {
@@ -33,7 +34,7 @@ const TransactionPreviewPanel = ({
         setDepositOutput('0.00000000');
       });
     }
-  }, [amount, selectedProtocol?.id]);
+  }, [amount, selectedPool]);
 
 
   const transactionSteps = [
@@ -163,27 +164,27 @@ const TransactionPreviewPanel = ({
             <span className="text-sm text-muted-foreground">You will receive after swapping</span>
             <div className="flex items-center space-x-2 mt-1">
               <span className="text-lg font-semibold text-foreground font-data">
-                {atomiqOutput}
+                {atomiqOutput} WBTC
               </span>
             </div>
           </div>
           {!selectedProtocol &&
           <div className="text-left mt-3">
-            <span className="text-sm text-red-500">Select a protocol to see the protocol assets amount you will receive</span>
+            <span className="text-sm text-red-500">Select a protocol and pool/strategy to see the protocol assets amount you will receive</span>
           </div>
           }
         </div>
       </div>
       }
       
-      {(amount > 0 && selectedProtocol && !getingAtomiqOutput) &&
+      {(amount > 0 && selectedPool && !getingAtomiqOutput) &&
       <div className="bg-muted/50 rounded-lg">
         <div className="block items-center justify-between">
           <div>
-            <span className="text-sm text-muted-foreground">You will receive after deposit</span>
+            <span className="text-sm text-muted-foreground">You will receive after deposit, around</span>
             <div className="flex items-center space-x-2 mt-1">
               <span className="text-lg font-semibold text-foreground font-data">
-                {depositOutput} {selectedProtocol?.id === "troves-vault" ? "tWBTC-E" : "vWBTC-Re7xBTC"}
+                {depositOutput} {selectedProtocol?.id === "troves-vault" ? "tWBTC-E" : selectedPool?.name === "Prime" ? "vWBTC" : "vWBTC-Re7xBTC"}
               </span>
               {selectedProtocol && (
                 <span className="text-sm text-accent hidden">
@@ -195,7 +196,7 @@ const TransactionPreviewPanel = ({
           <div className="text-right hidden">
             <span className="text-sm text-muted-foreground">Expected APY</span>
             <div className="text-lg font-semibold text-success">
-              {selectedProtocol?.apy || '0.00'}%
+              {(Number(selectedPool?.supplyApr ?? 0)*100).toFixed(2) || '0.00'}%
             </div>
           </div>
         </div>

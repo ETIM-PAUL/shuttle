@@ -153,7 +153,6 @@ const BridgeAndDeploy = () => {
         console.log("error", e)
       }
   
-      await handleGetWBTCBal(starknetAddress);
       setCompletedSteps([...completedSteps, "bridge_confirmation"])
       
     } catch (error) {
@@ -183,11 +182,11 @@ const BridgeAndDeploy = () => {
       // Prepare calls using contract instances
       const approveCall = wbtcCont.populate('approve', {
         spender: selectedContractAddress,
-        amount: parseUnits(atomiqOutput, 8),
+        amount: parseUnits(atomiqOutput.toString(), 8),
       });
 
       const transferCall = vesuCont.populate('deposit', {
-        assets: parseUnits(atomiqOutput, 8),
+        assets: parseUnits(atomiqOutput.toString(), 8),
         receiver: starknetAddress,
       });
 
@@ -195,6 +194,7 @@ const BridgeAndDeploy = () => {
       const tx = await myWalletAccount.execute([approveCall, transferCall]);
       
       await rpcProvider.waitForTransaction(tx.transaction_hash);
+      await handleGetWBTCBal(starknetAddress);
     
     setCompletedSteps([...completedSteps, "protocol_deployment"])
     
@@ -206,6 +206,9 @@ const BridgeAndDeploy = () => {
       setIsDeploying(false);
       setShowTransactionStatus(false);
     }, 3000);
+
+    toast.success("Assets deposit to Vesu Protocol");
+
 
     } catch (error) {
       setIsDeploying(false);
@@ -231,11 +234,11 @@ const BridgeAndDeploy = () => {
       // Prepare calls using contract instances
       const approveCall = wbtcCont.populate('approve', {
         spender: mainTrovesAddress,
-        amount: parseUnits(atomiqOutput, 8),
+        amount: parseUnits(atomiqOutput.toString(), 8),
       });
 
       const transferCall = trovesCont.populate('deposit', {
-        assets: parseUnits(atomiqOutput, 8),
+        assets: parseUnits(atomiqOutput.toString(), 8),
         receiver: starknetAddress,
       });
 
@@ -243,6 +246,8 @@ const BridgeAndDeploy = () => {
       const tx = await myWalletAccount.execute([approveCall, transferCall]);
       
       await rpcProvider.waitForTransaction(tx.transaction_hash);
+
+      await handleGetWBTCBal(starknetAddress);
     
     setCompletedSteps([...completedSteps, "protocol_deployment"])
     
@@ -277,22 +282,20 @@ const BridgeAndDeploy = () => {
       return;
     }
 
-    console.log("protocol", selectedProtocol)
-    console.log("pool", selectedPool)
+    setIsDeploying(true);
+    try {
+      await handleBridgingBTC2WBTC().then(async(res) => {
+        if (selectedProtocol?.id === "troves-vault") {
+          handleTrovesProtocolDeposit();
+        } else {
+          await handleVesuProtocolDeposit();
+        }
+      await handleGetWBTCBal(starknetAddress);
 
-    // setIsDeploying(true);
-    // try {
-    //   await handleBridgingBTC2WBTC().then(async(res) => {
-    //     if (selectedProtocol?.id === "troves-vault") {
-    //       handleTrovesProtocolDeposit();
-    //     } else {
-    //       await handleVesuProtocolDeposit();
-    //     }
-    //   }
-    //   );
-    // } catch (error) {
-    //   console.error('Deploy error:', error);
-    // }
+      });
+    } catch (error) {
+      console.error('Deploy error:', error);
+    }
   };
 
   async function handleWBTCOutput () {
@@ -315,9 +318,7 @@ const BridgeAndDeploy = () => {
         }
       );
 
-    console.log("out", swap.getOutput().toString());
-
-    setAtomiqOutput(swap.getOutput().toString());
+    setAtomiqOutput(swap.getOutput().toString().replace(/[^\d.]/g, ""));
     if (swap.getOutput().toString()) {
       setGettingAtomiqOutput(false);
     }
@@ -452,6 +453,7 @@ const BridgeAndDeploy = () => {
                   atomiqOutput={atomiqOutput}
                   getingAtomiqOutput={getingAtomiqOutput}
                   selectedProtocol={selectedProtocol}
+                  selectedPool={selectedPool}
                   onDeploy={handleDeploy}
                   isDeploying={isDeploying}
                 />

@@ -309,6 +309,14 @@ const WalletSection = () => {
                 <div className="flex items-center space-x-2">
                   <Icon name="Coins" size={16} className="text-accent" />
                   <span className="text-sm font-data text-foreground">{wBTCBalance ?? '-'}</span>
+                  <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => console.log("swapping to btc")}
+                      className="text-xs w-fit p-2 cursor-pointer h-fit"
+                    >
+                      swap to BTC
+                    </Button>
                 </div>
                 <div className="mt-1 text-[10px] text-muted-foreground">Shown after bridging</div>
               </div>

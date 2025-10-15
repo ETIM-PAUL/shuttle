@@ -108,7 +108,7 @@ const ProtocolSelectionCard = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      isSelectedPool?.id === pool.id ? 'bg-accent text-white' : 'bg-muted text-muted-foreground'
+                      isSelectedPool?.id === pool.id ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'
                     }`}>
                       <Icon name="Coins" size={16} />
                     </div>
@@ -121,7 +121,7 @@ const ProtocolSelectionCard = ({
                   <div className="flex items-center space-x-2">
                     {isSelectedPool?.id === pool.id && (
                       <div className="w-5 h-5 bg-accent rounded-full flex items-center justify-center">
-                        <Icon name="Check" size={12} color="white" />
+                        <Icon name="Check" size={12} color="green" />
                       </div>
                     )}
                     <button

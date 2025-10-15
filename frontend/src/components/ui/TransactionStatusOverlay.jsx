@@ -52,9 +52,9 @@ const TransactionStatusOverlay = ({
     // }
   }, [isVisible, isCompleted]);
 
-  const getStepStatus = (step) => {
+  const getStepStatus = (step, index) => {
+    if (step?.id === completedSteps[completedSteps?.length - 1]) return 'active';
     if (completedSteps.includes(step?.id)) return 'completed';
-    if (step?.id === currentStep) return 'active';
     return 'pending';
   };
 
@@ -121,7 +121,7 @@ const TransactionStatusOverlay = ({
         {/* Progress Steps */}
         <div className="p-6 space-y-4">
           {transactionSteps?.map((step, index) => {
-            const status = getStepStatus(step);
+            const status = getStepStatus(step, index);
             const iconName = getStepIcon(step, status);
             const iconColor = getStepIconColor(status);
 
