@@ -56,7 +56,6 @@ export const connectXverseWallet = async () => {
 
     try {
       const response = await request('wallet_connect', null);
-      console.log("response", response)
       if (response.status === 'success') {
         const paymentAddressItem = response.result.addresses.find(
           (address) => address.purpose === "payment"

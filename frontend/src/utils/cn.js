@@ -6,6 +6,7 @@ export function cn(...inputs) {
 }
 
 export const mainVesuAddress = "0x0131cc09160f144ec5880a0bc1a0633999030fa6a546388b5d0667cb171a52a0"
+export const primeVesuAddress = "0x04ecb0667140b9f45b067d026953ed79f22723f1cfac05a7b26c3ac06c88f56c"
 export const mainTrovesAddress = "0x05a4c1651b913aa2ea7afd9024911603152a19058624c3e425405370d62bf80c"
 export const wbtcAddress = "0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac"
 export const vesuImplAddress = "0x06027da5b39c337855be24cce5c441de4f218179510d28d20c0f6254e07e0b7c"

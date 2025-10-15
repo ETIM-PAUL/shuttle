@@ -5,10 +5,8 @@ import { useGlobal } from '../../context/global'
 import { Helmet } from 'react-helmet'
 import Header from '../../components/ui/Header'
 import { RpcProvider, Contract } from 'starknet'
-import { VESU_IMPL_ABI } from '../../utils/vesu_impl_abi'
 import { Main_Trooves_Abi } from '../../utils/main_trooves_abi'
-import { mainTrovesAddress, mainVesuAddress } from '../../utils/cn'
-import { vesuImplAddress, trovesImplAddress } from '../../utils/cn'
+import { mainTrovesAddress, mainVesuAddress, primeVesuAddress } from '../../utils/cn'
 import toast from 'react-hot-toast'
 import { Main_Vesu_Abi } from '../../utils/main_vesu_abi'
 import { formatUnits } from 'viem'
@@ -34,13 +32,14 @@ const WalletSection = () => {
   const [selectedPercentage, setSelectedPercentage] = useState(100);
   
   const [troovesData, setTroovesData] = useState({
-    deposits: { count: 0, amount: '0' },
+    deposits: { primeAssetsVal:0, assetsVal: 0, amount: '0' },
     withdrawals: { count: 0, amount: '0' },
     redemptions: { count: 0, amount: '0' },
-    balance: '0'
+    balance: '0',
+    primeVesuBalance: '0'
   });
   const [vesuData, setVesuData] = useState({
-    deposits: { count: 0, amount: '0' },
+    deposits: { assetsVal: 0, amount: '0' },
     withdrawals: { count: 0, amount: '0' },
     redemptions: { count: 0, amount: '0' },
     balance: '0'
@@ -86,22 +85,35 @@ const WalletSection = () => {
 
       // Fetch Vesu data
       const vesuContract = new Contract(Main_Vesu_Abi, mainVesuAddress, provider);
+      const primeVesuContract = new Contract(Main_Vesu_Abi, primeVesuAddress, provider);
       const [vesuBalance] = await Promise.all([
-        vesuContract.balance_of(starknetAddress)
+        vesuContract.balance_of(starknetAddress),
+      ]);
+      const [primeVesuBalance] = await Promise.all([
+        primeVesuContract.balance_of(starknetAddress),
+      ]);
+      const [vesuAssetsValue] = await Promise.all([
+        vesuContract.convert_to_assets(vesuBalance)
+      ]);
+      const [primeVesuAssetsValue] = await Promise.all([
+        primeVesuContract.convert_to_assets(primeVesuBalance)
       ]);
 
       // For Trooves, we'll use the same implementation for now
       // In a real scenario, you'd have a separate Trooves implementation contract
       const troovesContract = new Contract(Main_Trooves_Abi, mainTrovesAddress, provider);
       const [trovesBalance] = await Promise.all([
-        troovesContract.balance_of(starknetAddress),
+        troovesContract.balanceOf(starknetAddress),
+      ]);
+      const [trovesAssetsValue] = await Promise.all([
+        troovesContract.convert_to_assets(trovesBalance),
       ]);
 
-      console.log(vesuBalance)
 
       setVesuData({
         deposits: { 
-          count: vesuBalance > 0 ? 1 : 0, // Simplified - in reality you'd track individual transactions
+          primeAssetsVal: formatUnits(primeVesuAssetsValue, 8),
+          assetsVal: formatUnits(vesuAssetsValue, 8), // Simplified - in reality you'd track individual transactions
           amount: formatUnits(vesuBalance, 18) 
         },
         withdrawals: { 
@@ -112,13 +124,14 @@ const WalletSection = () => {
           count: 0,
           amount: 0 
         },
-        balance: formatUnits(vesuBalance, 18)
+        balance: formatUnits(vesuBalance, 18),
+        primeBalance: formatUnits(primeVesuBalance, 18)
       });
 
       setTroovesData({
         deposits: { 
-          count:  0,
-          amount: 0
+          assetsVal: formatUnits(trovesAssetsValue, 8),
+          amount: formatUnits(trovesBalance, 18)
         },
         withdrawals: { 
           count:  0,
@@ -315,7 +328,7 @@ const WalletSection = () => {
             <div className="flex items-start space-x-3">
               <Icon name="Info" size={18} className="text-muted-foreground mt-0.5" />
               <p className="text-sm text-muted-foreground">
-                Transaction counts are the ones processed through Shuttle. There will be difference if transactions are done directly on the selected protocol, you can track individual transactions from blockchain events.
+                Assets across Vesu and Troves Protocol and Pool/Strategies.
               </p>
             </div>
           </div>
@@ -333,49 +346,12 @@ const WalletSection = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-semibold text-foreground">{troovesData.balance} tWBTC-E</div>
-                    <div className="text-xs text-muted-foreground">Accumulated Balance</div>
-                    {parseFloat(troovesData.balance) === 0 && (
-                      <Button
-                        variant="outline"
-                        size="xs"
-                        onClick={() => handleRedeemClick({ ...troovesData, name: 'Trooves Vault' })}
-                        iconName="RefreshCw"
-                        iconPosition="left"
-                        className="mt-2 cursor-pointer"
-                      >
-                        Redeem
-                      </Button>
-                    )}
+                    <div className="text-lg font-semibold text-foreground">{troovesData?.balance}</div>
+                    <div className="text-xs text-muted-foreground">WBTC Evergreen (tWBTC-E)</div>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-surface border border-border rounded-lg p-4">
-                    <div className="text-xs text-muted-foreground mb-1">Deposits</div>
-                    <div className="flex items-center space-x-2">
-                      <Icon name="ArrowDown" size={16} className="text-green-500" />
-                      <span className="text-sm font-data text-foreground">{troovesData.deposits.count} tx</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">{troovesData.deposits.amount} WBTC</div>
-                  </div>
-
-                  <div className="bg-surface border border-border rounded-lg p-4">
-                    <div className="text-xs text-muted-foreground mb-1">Withdrawals</div>
-                    <div className="flex items-center space-x-2">
-                      <Icon name="ArrowUp" size={16} className="text-red-500" />
-                      <span className="text-sm font-data text-foreground">{troovesData.withdrawals.count} tx</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">{troovesData.withdrawals.amount} WBTC</div>
-                  </div>
-
-                  <div className="bg-surface border border-border rounded-lg p-4">
-                    <div className="text-xs text-muted-foreground mb-1">Redemptions</div>
-                    <div className="flex items-center space-x-2">
-                      <Icon name="RefreshCw" size={16} className="text-yellow-500" />
-                      <span className="text-sm font-data text-foreground">{troovesData.redemptions.count} tx</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">{troovesData.redemptions.amount} WBTC</div>
+                  <div className="text-right">
+                    <div className="text-lg font-semibold text-foreground">{troovesData.deposits.assetsVal}</div>
+                    <div className="text-xs text-muted-foreground">Troves Assets Value (WBTC)</div>
                   </div>
                 </div>
               </div>
@@ -393,51 +369,19 @@ const WalletSection = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-semibold text-foreground">{vesuData.balance} vWBTC-Re7xBTC</div>
-                    <div className="text-xs text-muted-foreground">Accumulated Balance</div>
-                    {parseFloat(vesuData.balance) > 0 && (
-                      <Button
-                        variant="outline"
-                        size="xs"
-                        onClick={() => handleRedeemClick({ ...vesuData, name: 'Vesu Lending' })}
-                        iconName="RefreshCw"
-                        iconPosition="left"
-                        className="mt-2 cursor-pointer"
-                      >
-                        Redeem
-                      </Button>
-                    )}
+                    <div className="text-lg font-semibold text-foreground">{vesuData.balance}</div>
+                    <div className="text-xs text-muted-foreground">Re7xBTC (vWBTC-Re7xBTC)</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-semibold text-foreground">{vesuData.primeBalance}</div>
+                    <div className="text-xs text-muted-foreground">Prime (vWBTC)</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-semibold text-foreground">{Number(vesuData.deposits.assetsVal) + Number(vesuData.deposits.primeAssetsVal)}</div>
+                    <div className="text-xs text-muted-foreground">Vesu Assets Value (WBTC)</div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-surface border border-border rounded-lg p-4">
-                    <div className="text-xs text-muted-foreground mb-1">Deposits</div>
-                    <div className="flex items-center space-x-2">
-                      <Icon name="ArrowDown" size={16} className="text-green-500" />
-                      <span className="text-sm font-data text-foreground">{vesuData.deposits.count} tx</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">{vesuData.deposits.amount} WBTC</div>
-                  </div>
-
-                  <div className="bg-surface border border-border rounded-lg p-4">
-                    <div className="text-xs text-muted-foreground mb-1">Withdrawals</div>
-                    <div className="flex items-center space-x-2">
-                      <Icon name="ArrowUp" size={16} className="text-red-500" />
-                      <span className="text-sm font-data text-foreground">{vesuData.withdrawals.count} tx</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">{vesuData.withdrawals.amount} WBTC</div>
-                  </div>
-
-                  <div className="bg-surface border border-border rounded-lg p-4">
-                    <div className="text-xs text-muted-foreground mb-1">Redemptions</div>
-                    <div className="flex items-center space-x-2">
-                      <Icon name="RefreshCw" size={16} className="text-yellow-500" />
-                      <span className="text-sm font-data text-foreground">{vesuData.redemptions.count} tx</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">{vesuData.redemptions.amount} WBTC</div>
-                  </div>
-                </div>
               </div>
             </div>
           )}

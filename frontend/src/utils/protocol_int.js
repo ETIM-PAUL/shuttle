@@ -11,7 +11,7 @@ export async function get_PreviewDeposit(amount, protocol) {
   const trovesSepoliaAddress = "0x05a4c1651b913aa2ea7afd9024911603152a19058624c3e425405370d62bf80c";
   const vesuCont = new Contract(Main_Vesu_Abi, vesuSepoliaAddress, provider);
   const TrovesCont = new Contract(Main_Trooves_Abi, trovesSepoliaAddress, provider);
-console.log("pro", protocol)
+
   if (protocol === "troves-vault") {
     const [val] = await Promise.all([
       TrovesCont.preview_deposit(BigInt(Math.floor(Number(amount) * 1e8))),

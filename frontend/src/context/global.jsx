@@ -2,8 +2,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { checkXverseOnLoad, connectXverseWallet, getBtcBalance, getVesu_WBTC_Balance } from "../utils/xverse_handler";
 import toast from "react-hot-toast";
-import { getBtcPrice, getVesuGenesisDetails } from "../api";
-import { formatUnits } from 'viem'
+import { getBtcPrice, getTrovesGenesisDetails, getVesuGenesisDetails } from "../api";
 
 // Create the context
 const GlobalContext = createContext();
@@ -26,12 +25,18 @@ export const GlobalProvider = ({ children }) => {
         name: 'Troves Vault',
         description: 'Automated yield farming with WBTC collateral',
         type: 'vault',
-        apy: 12.45,
-        risk: 'Medium',
-        tvl: '45.2M',
-        minDeposit: '0.001',
         lockPeriod: 'Flexible',
-        features: ['Auto-compound', 'Liquidity Mining', 'Governance Rewards']
+        features: ['Auto-compounding', 'Meta Vault — Automated Yield Router', 'APYs shown are just indicative and do not promise exact returns'],
+        pools: []
+      },
+      {
+        id: 'vesu-lending',
+        name: 'Vesu Lending',
+        description: 'Supply WBTC to earn lending interest',
+        type: 'lending',
+        lockPeriod: 'None',
+        features: ['Instant Withdrawal', 'Variable APY', 'Overcollateralized'],
+        pools: [],
       }
     ]);
   
@@ -40,7 +45,7 @@ export const GlobalProvider = ({ children }) => {
       getBtcPrice().then((res) =>
         setBtcPrice(res?.rate)
       );
-      handleGetVesuPoolDetails();
+      handleGetPoolDetails();
       checkXverseOnLoad((installed) => {
         setIsInstalled(installed);
       });
@@ -56,25 +61,34 @@ export const GlobalProvider = ({ children }) => {
       };
     };
 
-    const handleGetVesuPoolDetails = async () => {
+    const handleGetPoolDetails = async () => {
       try {
-          const res = await getVesuGenesisDetails(); 
-                   console.log("r",res)
-          setProtocols([...protocols, {
-            id: 'vesu-lending',
-            name: 'Vesu Lending',
-            description: 'Supply WBTC to earn lending interest',
-            type: 'lending',
-            supplyApy: formatUnits(res?.stats?.supplyApy?.value, res?.stats?.supplyApy?.decimals),
-            borrowedApr: formatUnits(res?.stats?.borrowApr?.value, res?.stats?.borrowApr?.decimals),
-            interestRate: formatUnits(res?.interestRate?.value, res?.interestRate?.decimals),
-            reserve: formatUnits(res?.config?.reserve?.value, res?.config?.reserve?.decimals),
-            risk: res?.risk?.url,
-            totalSupplied: formatUnits(res?.stats?.totalSupplied?.value, (res?.stats?.totalSupplied?.decimals ?? 8)),
-            maxUtilization: formatUnits(res?.config?.maxUtilization?.value, (res?.config?.maxUtilization?.decimals ?? 8)),
-            lockPeriod: 'None',
-            features: ['Instant Withdrawal', 'Variable APY', 'Overcollateralized']
-          }]);
+          const res1 = await getTrovesGenesisDetails(); 
+
+          setProtocols(prevProtocols => 
+            prevProtocols.map(protocol => {
+              if (protocol.id === 'troves-vault') {
+                return {
+                  ...protocol,
+                  pools: res1
+                };
+              }
+              return protocol;
+            })
+          );
+
+          const res2 = await getVesuGenesisDetails(); 
+          setProtocols(prevProtocols => 
+            prevProtocols.map(protocol => {
+              if (protocol.id === 'vesu-lending') {
+                return {
+                  ...protocol,
+                  pools: res2
+                };
+              }
+              return protocol;
+            })
+          );
         } catch (error) {
           console.log("error", error)
       };

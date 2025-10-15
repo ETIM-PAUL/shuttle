@@ -17,7 +17,7 @@ import {SwapperFactory, BitcoinNetwork, fromHumanReadableString, timeoutSignal} 
 import {Account, CallData, Contract, RpcProvider, wallet, WalletAccount} from "starknet";
 import {Transaction} from "@scure/btc-signer";
 import { VESU_IMPL_ABI } from '../../utils/vesu_impl_abi';
-import { mainTrovesAddress, mainVesuAddress, trovesImplAddress, vesuImplAddress, wbtcAddress } from '../../utils/cn';
+import { mainTrovesAddress, mainVesuAddress, primeVesuAddress, trovesImplAddress, vesuImplAddress, wbtcAddress } from '../../utils/cn';
 import { Main_Vesu_Abi } from '../../utils/main_vesu_abi';
 import { Main_Trooves_Abi } from '../../utils/main_trooves_abi';
 import { WBTC_abi } from '../../utils/main_wbtc_abi';
@@ -39,6 +39,7 @@ const BridgeAndDeploy = () => {
   
   const [amount, setAmount] = useState('');
   const [selectedProtocol, setSelectedProtocol] = useState(null);
+  const [selectedPool, setSelectedPool] = useState(null);
   const [isDeploying, setIsDeploying] = useState(false);
   const [getingAtomiqOutput, setGettingAtomiqOutput] = useState(false);
   const [completedSteps, setCompletedSteps] = useState([]);
@@ -174,12 +175,14 @@ const BridgeAndDeploy = () => {
         selectedWalletSWO
       );
 
+      let selectedContractAddress = selectedPool?.name === "Prime" ? primeVesuAddress : mainVesuAddress
+
       const wbtcCont = new Contract(WBTC_abi, wbtcAddress, myWalletAccount);
-      const vesuCont = new Contract(Main_Vesu_Abi, mainVesuAddress, myWalletAccount);
+      const vesuCont = new Contract(Main_Vesu_Abi, selectedContractAddress, myWalletAccount);
     
       // Prepare calls using contract instances
       const approveCall = wbtcCont.populate('approve', {
-        spender: mainVesuAddress,
+        spender: selectedContractAddress,
         amount: parseUnits(atomiqOutput, 8),
       });
 
@@ -252,7 +255,7 @@ const BridgeAndDeploy = () => {
       setShowTransactionStatus(false);
     }, 3000);
 
-    toast.success("Assets deposit to Trooves Yield Protocol");
+    toast.success("Assets deposit to Troves Yield Protocol");
     } catch (error) {
       setIsDeploying(false);
     toast.error(`Deposit failed: ${error.message}`);
@@ -269,24 +272,27 @@ const BridgeAndDeploy = () => {
       toast.error("Please enter amount greater than 0");
       return;
     }
-    if (!selectedProtocol) {
-      toast.error("Please select a protocol");
+    if (selectedProtocol && selectedPool === null) {
+      toast.error("Please select a protocol and a strategy/pool");
       return;
     }
 
-    setIsDeploying(true);
-    try {
-      await handleBridgingBTC2WBTC().then(async(res) => {
-        if (selectedProtocol?.id === "troves-vault") {
-          handleTrovesProtocolDeposit();
-        } else {
-          await handleVesuProtocolDeposit();
-        }
-      }
-      );
-    } catch (error) {
-      console.error('Deploy error:', error);
-    }
+    console.log("protocol", selectedProtocol)
+    console.log("pool", selectedPool)
+
+    // setIsDeploying(true);
+    // try {
+    //   await handleBridgingBTC2WBTC().then(async(res) => {
+    //     if (selectedProtocol?.id === "troves-vault") {
+    //       handleTrovesProtocolDeposit();
+    //     } else {
+    //       await handleVesuProtocolDeposit();
+    //     }
+    //   }
+    //   );
+    // } catch (error) {
+    //   console.error('Deploy error:', error);
+    // }
   };
 
   async function handleWBTCOutput () {
@@ -328,6 +334,10 @@ const BridgeAndDeploy = () => {
     setTransactionData(null);
     setAmount('');
     setSelectedProtocol(null);
+  };
+
+  const handlePoolSelect = (pool) => {
+    setSelectedPool(pool);
   };
 
   useEffect(() => {
@@ -423,7 +433,11 @@ const BridgeAndDeploy = () => {
                         key={index}
                         protocol={protocol}
                         isSelected={selectedProtocol?.id === protocol?.id}
+                        isSelectedPool={selectedPool}
+                        selectedProtocol={selectedProtocol}
                         onSelect={setSelectedProtocol}
+                        setSelectedPool={setSelectedPool}
+                        onSelectPool={handlePoolSelect}
                       />
                     ))}
                   </div>
