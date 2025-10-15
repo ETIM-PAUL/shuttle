@@ -4,12 +4,16 @@ import Button from '../../components/ui/Button'
 import { useGlobal } from '../../context/global'
 import { Helmet } from 'react-helmet'
 import Header from '../../components/ui/Header'
-import { RpcProvider, Contract } from 'starknet'
+import { RpcProvider, Contract, WalletAccount } from 'starknet'
 import { Main_Trooves_Abi } from '../../utils/main_trooves_abi'
 import { mainTrovesAddress, mainVesuAddress, primeVesuAddress } from '../../utils/cn'
 import toast from 'react-hot-toast'
 import { Main_Vesu_Abi } from '../../utils/main_vesu_abi'
 import { formatUnits } from 'viem'
+import { StarknetInitializer, StarknetInitializerType, StarknetSigner } from '@atomiqlabs/chain-starknet'
+import { BitcoinNetwork, fromHumanReadableString, SwapperFactory, timeoutSignal } from '@atomiqlabs/sdk'
+import { connect } from '@starknet-io/get-starknet'
+import { getVesu_WBTC_Balance } from '../../utils/xverse_handler'
 
 const WalletSection = () => {
   const {
@@ -25,6 +29,7 @@ const WalletSection = () => {
   } = useGlobal();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [bridging, setBridging] = useState(false);
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [showRedeemModal, setShowRedeemModal] = useState(false);
   const [selectedProtocol, setSelectedProtocol] = useState(null);
@@ -44,6 +49,19 @@ const WalletSection = () => {
     redemptions: { count: 0, amount: '0' },
     balance: '0'
   });
+
+
+  const Factory = new SwapperFactory([StarknetInitializer]);
+  const Tokens = Factory.Tokens;
+  
+    const swapper = Factory.newSwapper({
+      chains: {
+        STARKNET: {
+          rpcUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-mainnet.public.blastapi.io/rpc/v0_8'
+        }
+      },
+      bitcoinNetwork: BitcoinNetwork.MAINNET,
+    });
 
   const shortenAddress = (address) => {
     if (!address) return '';
@@ -76,6 +94,7 @@ const WalletSection = () => {
   // Fetch protocol data
   const fetchProtocolData = async () => {
     if (!starknetAddress) return;
+    await getVesu_WBTC_Balance(starknetAddress);
     
     setIsLoading(true);
     try {
@@ -131,7 +150,7 @@ const WalletSection = () => {
       setTroovesData({
         deposits: { 
           assetsVal: formatUnits(trovesAssetsValue, 8),
-          amount: formatUnits(trovesBalance, 18)
+          amount: formatUnits(trovesBalance, 8)
         },
         withdrawals: { 
           count:  0,
@@ -141,7 +160,7 @@ const WalletSection = () => {
           count: 0,
           amount: 0 
         },
-        balance: formatUnits(trovesBalance, 18)
+        balance: formatUnits(trovesBalance, 8)
       });
 
     } catch (error) {
@@ -162,7 +181,7 @@ const WalletSection = () => {
   // Handle percentage selection
   const handlePercentageSelect = (percentage) => {
     setSelectedPercentage(percentage);
-    const currentBalance = parseFloat(selectedProtocol?.balance || '0');
+    const currentBalance = parseFloat(wBTCBalance || '0');
     const amount = (currentBalance * percentage / 100).toFixed(8);
     setRedeemAmount(amount);
   };
@@ -208,8 +227,72 @@ const WalletSection = () => {
   useEffect(() => {
     if (isWalletConnected && starknetAddress) {
       fetchProtocolData();
+
     }
   }, [isWalletConnected, starknetAddress]);
+
+  const handleBridgingWBTC2BTC = async () => {
+  
+    try {
+
+      setBridging(true);
+      
+      // const swo = await connect();
+      if (!isWalletConnected) {
+        throw new Error('Failed to connect to wallet');
+      }
+      
+      // // Create RPC provider first
+      const rpcProvider = new RpcProvider({
+        nodeUrl: import.meta.env.VITE_STARKNET_RPC
+      });
+      
+      const swo = await connect({
+        modalMode: "alwaysAsk",
+        modalTheme: "dark",
+      });
+      
+      const starknetSigner = new StarknetSigner(await WalletAccount.connect(rpcProvider, swo));
+      
+      const _exactIn = true;
+      const _amount = fromHumanReadableString(wBTCBalance, Tokens.BITCOIN.BTC);
+      
+      await swapper.init();
+      // Create the swap
+      const swap = await swapper.swap(
+        Tokens.STARKNET.WBTC,
+        Tokens.BITCOIN.BTC,
+        _amount,
+        _exactIn,
+        starknetAddress,
+        walletAddress,
+        {
+          // gasAmount: 1_000_000_000_000_000_000n
+        }
+      );
+
+      await swap.commit(starknetSigner);
+      
+      //Wait for the swap to conclude
+      const result = await swap.waitForPayment();
+      if(!result) {
+          //Swap failed, money can be refunded
+          await swap.refund();
+      } else {
+          //Swap successful, we can get the bitcoin txId
+          const bitcoinTxId = swap.getOutputTxId();
+      }
+       getVesu_WBTC_Balance(starknetAddress);
+  
+      setBridging(false)
+      setShowRedeemModal(false)
+      
+    } catch (error) {
+      console.error('Deploy error:', error);
+      toast.error(`Shuttle failed: ${error.message}`);
+      setBridging(false);
+    }
+  }
 
   if (!isWalletConnected) {
     return (
@@ -312,10 +395,10 @@ const WalletSection = () => {
                   <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => console.log("swapping to btc")}
+                      onClick={() => setShowRedeemModal(true)}
                       className="text-xs w-fit p-2 cursor-pointer h-fit"
                     >
-                      swap to BTC
+                      {bridging ? "Swapping" : "Swap to BTC"}
                     </Button>
                 </div>
                 <div className="mt-1 text-[10px] text-muted-foreground">Shown after bridging</div>
@@ -400,7 +483,7 @@ const WalletSection = () => {
 
       {/* Redeem Confirmation Modal */}
       {showRedeemModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-10 bg-black/80 flex items-center justify-center p-4">
           <div className="bg-gray-700 border border-border rounded-xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">Redeem {selectedProtocol?.name}</h3>
@@ -415,7 +498,7 @@ const WalletSection = () => {
             <div className="space-y-4">
               <div className="bg-surface border border-border rounded-lg p-4">
                 <div className="text-sm text-muted-foreground mb-2">Available Balance</div>
-                <div className="text-lg font-semibold text-foreground">{selectedProtocol?.balance} WBTC</div>
+                <div className="text-lg font-semibold text-foreground">{wBTCBalance} WBTC</div>
               </div>
 
               <div>
@@ -439,7 +522,7 @@ const WalletSection = () => {
 
               <div>
                 <label className="text-sm font-medium text-foreground mb-2 block">
-                  Amount to Redeem
+                  Amount to Swap
                 </label>
                 <div className="relative">
                   <input
@@ -460,7 +543,7 @@ const WalletSection = () => {
                 <div className="flex items-start space-x-2">
                   <Icon name="Info" size={16} className="text-muted-foreground mt-0.5" />
                   <div className="text-xs text-muted-foreground">
-                    <p className="mb-1">You will receive WBTC tokens in your wallet.</p>
+                    <p className="mb-1">You will receive BTC tokens in your wallet.</p>
                     <p>This action cannot be undone.</p>
                   </div>
                 </div>
@@ -470,19 +553,19 @@ const WalletSection = () => {
                 <Button
                   variant="outline"
                   onClick={handleCloseModal}
-                  className="flex-1"
-                  disabled={isRedeeming}
+                  className="flex-1 cursor-pointer"
+                  disabled={bridging}
                 >
                   Cancel
                 </Button>
                 <Button
-                  variant="default"
-                  onClick={handleRedeemConfirm}
-                  className="flex-1"
-                  loading={isRedeeming}
-                  disabled={!redeemAmount || parseFloat(redeemAmount) <= 0}
+                  variant="outline"
+                  onClick={handleBridgingWBTC2BTC}
+                  className="flex-1 cursor-pointer"
+                  loading={bridging}
+                  disabled={!wBTCBalance || parseFloat(wBTCBalance) <= 0}
                 >
-                  {isRedeeming ? 'Redeeming...' : 'Confirm Redeem'}
+                  {bridging ? 'Swapping...' : 'Confirm Swap'}
                 </Button>
               </div>
             </div>

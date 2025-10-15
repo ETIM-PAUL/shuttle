@@ -17,7 +17,7 @@ const TransactionStatusOverlay = ({
       title: 'Bridge Confirmation',
       description: 'Confirming Bitcoin transaction on network',
       icon: 'ArrowRightLeft',
-      estimatedTime: '10-30 minutes',
+      estimatedTime: '20-50 minutes',
     },
     {
       id: 'protocol_deployment',
@@ -35,22 +35,6 @@ const TransactionStatusOverlay = ({
     }
   ];
 
-  useEffect(() => {
-    // if (isVisible && !isCompleted) {
-    //   const interval = setInterval(() => {
-    //     setCurrentStep((prev) => {
-    //       if (prev < transactionSteps?.length - 1) {
-    //         return prev + 1;
-    //       } else {
-    //         setIsCompleted(true);
-    //         return prev;
-    //       }
-    //     });
-    //   }, 3000);
-
-    //   return () => clearInterval(interval);
-    // }
-  }, [isVisible, isCompleted]);
 
   const getStepStatus = (step, index) => {
     if (step?.id === completedSteps[completedSteps?.length - 1]) return 'active';
@@ -78,7 +62,7 @@ const TransactionStatusOverlay = ({
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-10 bg-black/80 flex items-center justify-center p-4">
       <div className="bg-gray-700 rounded-lg shadow-lg max-w-md w-full mx-4 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
@@ -104,7 +88,7 @@ const TransactionStatusOverlay = ({
         </div>
 
         {/* Transaction Hash */}
-        {transactionData?.hash && (
+        {transactionData?.id && (
           <div className="px-6 py-3 bg-muted">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Transaction Hash</span>
@@ -113,7 +97,7 @@ const TransactionStatusOverlay = ({
               </Button>
             </div>
             <p className="text-xs font-data text-foreground mt-1 break-all">
-              {transactionData?.hash}
+              {transactionData?.id}
             </p>
           </div>
         )}
@@ -183,9 +167,9 @@ const TransactionStatusOverlay = ({
                 <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                 <span className="text-sm text-muted-foreground">Processing transaction...</span>
               </div>
-              <Button variant="outline" size="sm" onClick={onClose}>
+              {/* <Button variant="outline" size="sm" onClick={onClose}>
                 Minimize
-              </Button>
+              </Button> */}
             </div>
           )}
         </div>

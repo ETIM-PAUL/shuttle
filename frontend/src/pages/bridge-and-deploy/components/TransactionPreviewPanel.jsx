@@ -102,7 +102,7 @@ const TransactionPreviewPanel = ({
       </div>
 
       {/* Fee Breakdown */}
-      <div className="space-y-3 pt-4 border-t border-border">
+      <div className="space-y-3 pt-4 border-t border-border hidden">
         <h4 className="text-sm font-medium text-foreground">Fee Breakdown</h4>
         
         <div className="space-y-2">
@@ -119,7 +119,7 @@ const TransactionPreviewPanel = ({
         </div>
       </div>
       {/* Slippage Settings */}
-      <div className="space-y-3 pt-4 border-t border-border">
+      <div className="space-y-3 hidden pt-4 border-t border-border">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-medium text-foreground">Slippage Tolerance</h4>
           <div className="flex items-center space-x-2">

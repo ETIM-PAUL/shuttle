@@ -21,7 +21,7 @@ export async function get_PreviewDeposit(amount, protocol, pool) {
     }; 
   } else {
 
-    if (pool.name === "Prime") {
+    if (pool && pool?.name === "Prime") {
       const [val] = await Promise.all([
         primeVesuCont.preview_deposit(BigInt(Math.floor(Number(amount) * 1e8))),
         ]);
@@ -33,6 +33,7 @@ export async function get_PreviewDeposit(amount, protocol, pool) {
       const [val] = await Promise.all([
       vesuCont.preview_deposit(BigInt(Math.floor(Number(amount) * 1e8))),
       ]);
+
 
       return {
         formattedVal: formatUnits(val, 18),

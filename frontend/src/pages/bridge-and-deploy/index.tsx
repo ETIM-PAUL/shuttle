@@ -8,20 +8,20 @@ import TransactionPreviewPanel from './components/TransactionPreviewPanel';
 import Icon from '../../components/AppIcon';
 import { useGlobal } from '../../context/global';
 import toast from 'react-hot-toast';
-import { connect } from "@starknet-io/get-starknet"
+// import { connect } from "@starknet-io/get-starknet"
 import { parseUnits } from 'viem'
 
-import {getProviders, getProviderById, request} from "sats-connect";
+import {request} from "sats-connect";
 import {StarknetInitializer, StarknetInitializerType, StarknetSigner} from "@atomiqlabs/chain-starknet";
 import {SwapperFactory, BitcoinNetwork, fromHumanReadableString, timeoutSignal} from "@atomiqlabs/sdk";
-import {Account, CallData, Contract, RpcProvider, wallet, WalletAccount} from "starknet";
+import {Contract, RpcProvider, wallet, WalletAccount} from "starknet";
 import {Transaction} from "@scure/btc-signer";
-import { VESU_IMPL_ABI } from '../../utils/vesu_impl_abi';
 import { mainTrovesAddress, mainVesuAddress, primeVesuAddress, trovesImplAddress, vesuImplAddress, wbtcAddress } from '../../utils/cn';
 import { Main_Vesu_Abi } from '../../utils/main_vesu_abi';
 import { Main_Trooves_Abi } from '../../utils/main_trooves_abi';
 import { WBTC_abi } from '../../utils/main_wbtc_abi';
 import { useEffect } from 'react';
+import { connect } from '@starknet-io/get-starknet';
 
 
 const BridgeAndDeploy = () => {
@@ -46,6 +46,7 @@ const BridgeAndDeploy = () => {
   const [showTransactionStatus, setShowTransactionStatus] = useState(false);
   const [transactionData, setTransactionData] = useState(null);
   const [atomiqOutput, setAtomiqOutput] = useState(null);
+  const [walletAccount, setWalletAccount] = useState(null);
   
   const rpcProvider = new RpcProvider({
     nodeUrl: import.meta.env.VITE_STARKNET_RPC
@@ -64,41 +65,38 @@ const BridgeAndDeploy = () => {
   });
       
   const handleBridgingBTC2WBTC = async () => {
-
     setTransactionData({
       amount: amount,
       protocol: selectedProtocol?.name,
-      hash: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'
+      hash: ''
     });
-  
+    let txtId;
+    await swapper.init();
+
+    // const swo = await connect();
+    if (!isWalletConnected) {
+      throw new Error('Failed to connect to wallet');
+    }
+    
+    // // Create RPC provider first
+    const rpcProvider = new RpcProvider({
+      nodeUrl: import.meta.env.VITE_STARKNET_RPC
+    });
+    setShowTransactionStatus(true);
+
+    
+    const swo = await connect({
+      modalMode: "alwaysAsk",
+      modalTheme: "dark",
+      // include: ["xverse wallet"]
+    });
+
+
     try {
-
-      await swapper.init();
-
-      // const swo = await connect();
-      if (!isWalletConnected) {
-        throw new Error('Failed to connect to wallet');
-      }
-      
-      // // Create RPC provider first
-      const rpcProvider = new RpcProvider({
-        nodeUrl: import.meta.env.VITE_STARKNET_RPC
-      });
-      
-      const swo = await connect({
-        modalMode: "alwaysAsk",
-        modalTheme: "dark",
-        // include: ["xverse wallet"]
-      });
-
       const starknetSigner = new StarknetSigner(await WalletAccount.connect(rpcProvider, swo));
-      
-      setShowTransactionStatus(true);
       
       const _exactIn = true;
       const _amount = fromHumanReadableString(amount, Tokens.BITCOIN.BTC);
-
-      
       
       // Create the swap
       const swap = await swapper.swap(
@@ -112,6 +110,7 @@ const BridgeAndDeploy = () => {
           // gasAmount: 1_000_000_000_000_000_000n
         }
       );
+      
       
       // Get funded PSBT
       const {psbt, signInputs} = await swap.getFundedPsbt({
@@ -135,6 +134,7 @@ const BridgeAndDeploy = () => {
       // Parse signed PSBT
       const signedTransaction = Transaction.fromPSBT(Buffer.from(signedPsbtBase64, "base64"));
       const bitcoinTxId = await swap.submitPsbt(signedTransaction);
+      txtId = bitcoinTxId
   
       // Wait for payment
       await swap.waitForBitcoinTransaction(
@@ -143,6 +143,8 @@ const BridgeAndDeploy = () => {
           console.log(`Transaction ${txId} has ${confirmations}/${targetConfirmations} confirmations`);
         }
       );
+
+      setTransactionData({...transactionData, "id": txtId})
 
       //Swap should get automatically claimed by the watchtowers, if not we can call swap.claim() ourselves
       try {
@@ -154,26 +156,37 @@ const BridgeAndDeploy = () => {
       }
   
       setCompletedSteps([...completedSteps, "bridge_confirmation"])
+
+      if (selectedProtocol?.id === "troves-vault") {
+        handleTrovesProtocolDeposit();
+      } else if (selectedProtocol?.id === "vesu-lending") {
+        await handleVesuProtocolDeposit();
+      }
+    await handleGetWBTCBal(starknetAddress);
       
     } catch (error) {
       console.error('Deploy error:', error);
       toast.error(`Shuttle failed: ${error.message}`);
       setIsDeploying(false);
+      setShowTransactionStatus(false);
     }
   }
   
   async function handleVesuProtocolDeposit() {
+
+    const swo = await connect({
+      modalMode: "alwaysAsk",
+      modalTheme: "dark",
+      // include: ["xverse wallet"]
+    });
+    
+
+    const myWalletAccount = await WalletAccount.connect(
+      { nodeUrl: import.meta.env.VITE_STARKNET_RPC},
+      swo
+    );
+
     try {      
-      const selectedWalletSWO = await connect({
-        modalMode: "alwaysAsk",
-        modalTheme: "dark"
-      });
-
-      const myWalletAccount = await WalletAccount.connect(
-        { nodeUrl: import.meta.env.VITE_STARKNET_RPC},
-        selectedWalletSWO
-      );
-
       let selectedContractAddress = selectedPool?.name === "Prime" ? primeVesuAddress : mainVesuAddress
 
       const wbtcCont = new Contract(WBTC_abi, wbtcAddress, myWalletAccount);
@@ -191,9 +204,11 @@ const BridgeAndDeploy = () => {
       });
 
       // Execute both calls in one transaction
-      const tx = await myWalletAccount.execute([approveCall, transferCall]);
-      
+      const tx = await myWalletAccount.execute([approveCall]);
       await rpcProvider.waitForTransaction(tx.transaction_hash);
+      const tx2 = await myWalletAccount.execute([transferCall]);
+      await rpcProvider.waitForTransaction(tx2.transaction_hash);
+      
       await handleGetWBTCBal(starknetAddress);
     
     setCompletedSteps([...completedSteps, "protocol_deployment"])
@@ -219,14 +234,18 @@ const BridgeAndDeploy = () => {
 
   async function handleTrovesProtocolDeposit() {
     try {
-      const selectedWalletSWO = await connect({
-        modalMode: "alwaysAsk",
-        modalTheme: "dark"
-      });
-      const myWalletAccount = await WalletAccount.connect(
-        { nodeUrl: import.meta.env.VITE_STARKNET_RPC },
-        selectedWalletSWO
-      );
+
+    const swo = await connect({
+      modalMode: "alwaysAsk",
+      modalTheme: "dark",
+      // include: ["xverse wallet"]
+    });
+
+    const myWalletAccount = await WalletAccount.connect(
+      { nodeUrl: import.meta.env.VITE_STARKNET_RPC},
+      swo
+    );
+
 
       const wbtcCont = new Contract(WBTC_abi, wbtcAddress, myWalletAccount);
       const trovesCont = new Contract(Main_Trooves_Abi, mainTrovesAddress, myWalletAccount);
@@ -243,9 +262,10 @@ const BridgeAndDeploy = () => {
       });
 
       // Execute both calls in one transaction
-      const tx = await myWalletAccount.execute([approveCall, transferCall]);
-      
+      const tx = await myWalletAccount.execute([approveCall]);
       await rpcProvider.waitForTransaction(tx.transaction_hash);
+      const tx2 = await myWalletAccount.execute([transferCall]);
+      await rpcProvider.waitForTransaction(tx2.transaction_hash);
 
       await handleGetWBTCBal(starknetAddress);
     
@@ -283,16 +303,11 @@ const BridgeAndDeploy = () => {
     }
 
     setIsDeploying(true);
-    try {
-      await handleBridgingBTC2WBTC().then(async(res) => {
-        if (selectedProtocol?.id === "troves-vault") {
-          handleTrovesProtocolDeposit();
-        } else {
-          await handleVesuProtocolDeposit();
-        }
-      await handleGetWBTCBal(starknetAddress);
+    setShowTransactionStatus(true);
+    console.log(selectedProtocol)
 
-      });
+    try {
+      await handleBridgingBTC2WBTC();
     } catch (error) {
       console.error('Deploy error:', error);
     }
@@ -355,7 +370,7 @@ const BridgeAndDeploy = () => {
         <title>Bridge & Deploy - Bitcoin Yield Shuttle</title>
         <meta name="description" content="Bridge your Bitcoin to Starknet and deploy to yield protocols with one click" />
       </Helmet>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen z-10 bg-background">
         <Header />
         
         <main className="pt-16">
@@ -383,7 +398,7 @@ const BridgeAndDeploy = () => {
                     <Icon name="TrendingUp" size={16} className="text-success" />
                     <span className="text-sm text-muted-foreground">Best APY</span>
                   </div>
-                  <span className="text-2xl font-bold text-foreground font-data">12.45%</span>
+                  <span className="text-2xl font-bold text-foreground font-data">3.24%</span>
                 </div>
                 
                 <div className="bg-card border border-border rounded-lg p-4">
@@ -391,15 +406,15 @@ const BridgeAndDeploy = () => {
                     <Icon name="DollarSign" size={16} className="text-accent" />
                     <span className="text-sm text-muted-foreground">Total TVL</span>
                   </div>
-                  <span className="text-2xl font-bold text-foreground">$141.7M</span>
+                  <span className="text-2xl font-bold text-foreground">$12.7M</span>
                 </div>
                 
                 <div className="bg-card border border-border rounded-lg p-4">
                   <div className="flex items-center space-x-2 mb-2">
                     <Icon name="Users" size={16} className="text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Active Users</span>
+                    <span className="text-sm text-muted-foreground">Active Pools/Strategies</span>
                   </div>
-                  <span className="text-2xl font-bold text-foreground">2,847</span>
+                  <span className="text-2xl font-bold text-foreground">3</span>
                 </div>
               </div>
             </div>
@@ -467,10 +482,11 @@ const BridgeAndDeploy = () => {
                         Security Features
                       </h4>
                       <ul className="text-xs text-muted-foreground space-y-1">
-                        <li>• Multi-signature wallet protection</li>
+                        <li>• Non-Custodial Architecture</li>
                         <li>• Smart contract audit verification</li>
                         <li>• Real-time risk monitoring</li>
-                        <li>• Emergency withdrawal capabilities</li>
+                        <li>• Layer 2 Security Inheritance</li>
+                        <li>• Trustless Cross-Chain Bridge</li>
                       </ul>
                     </div>
                   </div>
