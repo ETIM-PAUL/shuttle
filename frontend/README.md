@@ -2,11 +2,11 @@
 
 A modern DeFi platform that enables users to bridge Bitcoin to Starknet and deploy it to yield-generating protocols in a single flow.
 
-## 🌐 Live Demo - https://www.loom.com/share/516ade566cf44f93a0e2af8e9c99aeb0?sid=a154d135-1942-4da1-ac4f-2cdcb8da542b
+##### Live Demo - https://www.loom.com/share/516ade566cf44f93a0e2af8e9c99aeb0?sid=a154d135-1942-4da1-ac4f-2cdcb8da542b
 
-**[Launch Application →](https://your-shuttle-app.vercel.app)**
+**[Launch Application →](https://shuttle-zeta-ruby.vercel.app/)**
 
-## 📖 Description
+## Description
 
 Shuttle Frontend is a Vute-based web application that simplifies the process of earning yield on Bitcoin. It allows users to:
 
@@ -18,27 +18,27 @@ The platform integrates with Xverse wallet for Bitcoin transactions and for L2 i
 
 ---
 
-## 🎯 Key Features
+## Key Features
 
 ### Core Functionality
-- 🔄 **One-Click Bridge & Deploy**: Bridge BTC → WBTC → Protocol in a single flow
-- 💰 **Multi-Protocol Support**: Vesu Lending (Prime & Re7xBTC) and Troves Vault (WBTC Evergreen)
-- 📊 **Real-Time APY Display**: Live interest rates and protocol statistics
-- 🔐 **Non-Custodial**: Users maintain full control of their assets
-- 📱 **Responsive Design**: Optimized for desktop and mobile devices
-- 🔐 **Swap Back**: Users can swap back their WBTC to BTC in cases of network or power outage while depositing WBTC to a protocol. 
+- **One-Click Bridge & Deploy**: Bridge BTC → WBTC → Protocol in a single flow
+- **Multi-Protocol Support**: Vesu Lending (Prime & Re7xBTC) and Troves Vault (WBTC Evergreen)
+- **Real-Time APY Display**: Live interest rates and protocol statistics
+- **Non-Custodial**: Users maintain full control of their assets
+- **Responsive Design**: Optimized for desktop and mobile devices
+- **Swap Back**: Users can swap back their WBTC to BTC in cases of network or power outage while depositing WBTC to a protocol. 
 
 ### Wallet Integration
-- 🦊 **Xverse Wallet**: Bitcoin transaction signing, BTC balances and prize.
+- **Xverse Wallet**: Bitcoin transaction signing, BTC balances and prize.
 
 ### DeFi Features
-- 📈 **Yield Farming**: Automated strategies via Troves
-- 🏦 **Lending Markets**: Supply WBTC on Vesu for interest
-- 💱 **Swap Back to BTC**: Redeem positions and bridge back
+- **Yield Farming**: Automated strategies via Troves
+- **Lending Markets**: Supply WBTC on Vesu for interest
+- **Swap Back to BTC**: Redeem positions and bridge back
 
 ---
 
-## 🏗️ Architecture & Flow
+## Architecture & Flow
 
 ### User Journey Flow
 
@@ -95,7 +95,7 @@ The platform integrates with Xverse wallet for Bitcoin transactions and for L2 i
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Frontend Framework
 - **React 19.1.1** - UI library
@@ -131,7 +131,7 @@ The platform integrates with Xverse wallet for Bitcoin transactions and for L2 i
 
 ---
 
-## 📦 Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 ```bash
@@ -189,7 +189,7 @@ yarn preview
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 frontend/
@@ -248,7 +248,7 @@ frontend/
 
 ---
 
-## 🔧 Core Modules
+## Core Modules
 
 ### 1. Wallet Integration (`src/utils/xverse_handler.js`)
 
@@ -337,7 +337,7 @@ const GlobalContext = {
 }
 ```
 
-## 🔐 Security Features
+## Security Features
 
 1. **Non-Custodial**: Users sign all transactions
 2. **Contract Audits**: All integrated protocols are audited
@@ -346,7 +346,7 @@ const GlobalContext = {
 
 ---
 
-## 📊 Supported Protocols
+## Supported Protocols
 
 ### Vesu Lending
 - **Prime Pool**: Lower risk, instant withdrawal
@@ -360,7 +360,7 @@ const GlobalContext = {
 
 ---
 
-## 🌐 Network & Contract Addresses
+## Network & Contract Addresses
 
 ### Starknet Mainnet
 ```javascript
@@ -371,7 +371,7 @@ Troves Vault: 0x05a4c1651b913aa2ea7afd9024911603152a19058624c3e425405370d62bf80c
 ```
 
 
-## 📈 Performance Optimizations
+## Performance Optimizations
 
 - **Code Splitting**: Dynamic imports for routes
 - **Lazy Loading**: Images and components loaded on demand
@@ -380,14 +380,14 @@ Troves Vault: 0x05a4c1651b913aa2ea7afd9024911603152a19058624c3e425405370d62bf80c
 - **CSS Purging**: Unused Tailwind classes removed in production
 
 
-## 🐛 Known Issues & Limitations
+## Known Issues & Limitations
 
 1. **Bitcoin Confirmations**: BTC bridging takes 20-50 minutes.
 2. **Wallet Support**: Currently Xverse for Bitcoin.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create feature branch (`git checkout -b feature/AmazingFeature`)
@@ -397,19 +397,19 @@ Troves Vault: 0x05a4c1651b913aa2ea7afd9024911603152a19058624c3e425405370d62bf80c
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.
 
 ---
 
-## 👥 Team & Support
+## Team & Support
 - **Email**: etimpaul22@gmail.com
 - **Telegram**: @Joe_Oracle
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **Atomiq Labs** - Bitcoin ↔ Starknet bridge SDK
 - **Vesu Protocol** - Lending markets
@@ -419,7 +419,7 @@ This project is licensed under the MIT License.
 
 ---
 
-## 📚 Additional Resources
+## Additional Resources
 
 - [Starknet Documentation](https://docs.starknet.io)
 - [Atomiq Labs SDK](https://docs.atomiq.xyz)
