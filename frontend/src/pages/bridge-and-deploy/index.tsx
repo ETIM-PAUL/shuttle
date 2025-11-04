@@ -230,13 +230,13 @@ const BridgeAndDeploy = () => {
       
   
       // Wait for payment
-      const success = await swap.waitForPayment(
+      const success = await swap.waitForPayment()
         if(!success) {
           setIsDeploying(false);
           setShowTransactionStatus(false);
-          toast.error("Lightning network payment not received in time and quote expired")
+          toast.error("Lightning network payment not received in time and quote expired");
           return;
-        });
+        };
 
       const automaticSettlementSuccess = await swap.waitTillClaimed(60);
 
