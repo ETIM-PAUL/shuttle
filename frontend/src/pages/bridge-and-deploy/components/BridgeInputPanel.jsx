@@ -8,7 +8,7 @@ const BridgeInputPanel = ({
   btcPrice,
   onAmountChange, 
   walletBalance = '0.12345678',
-  isWalletConnected = false 
+  isWalletConnected = false
 }) => {
   const [usdValue, setUsdValue] = useState('0.00');
 
@@ -32,9 +32,11 @@ const BridgeInputPanel = ({
   return (
     <div className="bg-card border border-border rounded-lg p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground font-heading">
-          Bridge Amount
-        </h3>
+        <div className="flex items-center space-x-2">
+          <h3 className="text-lg font-semibold text-foreground font-heading">
+            Bridge Amount
+          </h3>
+        </div>
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
           <Icon name="Wallet" size={16} />
           <span>Balance: {walletBalance} BTC</span>

@@ -22,6 +22,7 @@ import { Main_Trooves_Abi } from '../../utils/main_trooves_abi';
 import { WBTC_abi } from '../../utils/main_wbtc_abi';
 import { useEffect } from 'react';
 import { connect } from '@starknet-io/get-starknet';
+import Input from '../../components/ui/Input';
 
 
 const BridgeAndDeploy = () => {
@@ -47,7 +48,10 @@ const BridgeAndDeploy = () => {
   const [showTransactionStatus, setShowTransactionStatus] = useState(false);
   const [transactionData, setTransactionData] = useState(null);
   const [atomiqOutput, setAtomiqOutput] = useState(null);
-  const [walletAccount, setWalletAccount] = useState(null);
+  const [lightningSupport, setLightningSupport] = useState(false);
+  const [receivingLightningInvoice, setReceivingLightningInvoice] = useState('');
+  const [qrCodeData, setQrCodeData] = useState(null);
+  const [expiryDate, setExpiryDate] = useState(null);
   
   const rpcProvider = new RpcProvider({
     nodeUrl: import.meta.env.VITE_STARKNET_RPC
@@ -164,6 +168,90 @@ const BridgeAndDeploy = () => {
         await handleVesuProtocolDeposit();
       }
     await handleGetWBTCBal(starknetAddress);
+      
+    } catch (error) {
+      console.error('Deploy error:', error);
+      toast.error(`Shuttle failed: ${error.message}`);
+      setIsDeploying(false);
+      setShowTransactionStatus(false);
+    }
+  }
+
+  const handleLightningBridgingBTC2WBTC = async () => {
+    setTransactionData({
+      amount: amount,
+      protocol: selectedProtocol?.name,
+      hash: ''
+    });
+    await swapper.init();
+
+    
+    // // Create RPC provider first
+    const rpcProvider = new RpcProvider({
+      nodeUrl: import.meta.env.VITE_STARKNET_RPC
+    });
+    setShowTransactionStatus(true);
+
+    
+    const swo = await connect({
+      modalMode: "alwaysAsk",
+      modalTheme: "dark",
+      // include: ["xverse wallet"]
+    });
+
+
+    try {
+      const starknetSigner = new StarknetSigner(await WalletAccount.connect(rpcProvider, swo));
+      
+      const _exactIn = true;
+      const _amount = fromHumanReadableString(amount, Tokens.BITCOIN.BTC);
+      
+      // Create the swap
+      const swap = await swapper.swap(
+        Tokens.BITCOIN.BTCLN,
+        Tokens.STARKNET.WBTC,
+        _amount,
+        _exactIn,
+        undefined,
+        starknetAddress,
+        {
+          // gasAmount: 1_000_000_000_000_000_000n
+        }
+      );
+
+      //Get the bitcoin lightning network invoice (the invoice contains pre-entered amount)
+      const receivingLightningInvoice: string = swap.getAddress();
+      //Get the URI hyperlink (contains the lightning network invoice) which can be displayed also as QR code
+      const qrCodeData: string = swap.getHyperlink();
+      
+      setReceivingLightningInvoice(receivingLightningInvoice);
+      setQrCodeData(qrCodeData);
+      setExpiryDate(swap.getQuoteExpiry());
+      
+  
+      // Wait for payment
+      const success = await swap.waitForPayment(
+        if(!success) {
+          setIsDeploying(false);
+          setShowTransactionStatus(false);
+          toast.error("Lightning network payment not received in time and quote expired")
+          return;
+        });
+
+      const automaticSettlementSuccess = await swap.waitTillClaimed(60);
+
+      if(!automaticSettlementSuccess) {
+        await swap.claim(starknetSigner);
+      }
+  
+      setCompletedSteps([...completedSteps, "bridge_confirmation"])
+
+      if (selectedProtocol?.id === "troves-vault") {
+        handleTrovesProtocolDeposit();
+      } else if (selectedProtocol?.id === "vesu-lending") {
+        await handleVesuProtocolDeposit();
+      }
+      await handleGetWBTCBal(starknetAddress);
       
     } catch (error) {
       console.error('Deploy error:', error);
@@ -307,7 +395,11 @@ const BridgeAndDeploy = () => {
     setShowTransactionStatus(true);
 
     try {
-      await handleBridgingBTC2WBTC();
+      if (lightningSupport) {
+        await handleLightningBridgingBTC2WBTC();
+      } else {
+        await handleBridgingBTC2WBTC();
+      }
     } catch (error) {
       console.error('Deploy error:', error);
     }
@@ -377,17 +469,24 @@ const BridgeAndDeploy = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Page Header */}
             <div className="mb-8">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                  <Icon name="Rocket" size={24} className="text-accent" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                    <Icon name="Rocket" size={24} className="text-accent" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground font-heading">
+                      Bridge & Deploy
+                    </h1>
+                    <p className="text-muted-foreground">
+                      Convert your Bitcoin to yield-generating positions in one click
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-foreground font-heading">
-                    Bridge & Deploy
-                  </h1>
-                  <p className="text-muted-foreground">
-                    Convert your Bitcoin to yield-generating positions in one click
-                  </p>
+
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <Input type="checkbox" className="focus:ring-0 focus:outline-none" name="Lightning Network Support" size={16} checked={lightningSupport} onChange={() => setLightningSupport(!lightningSupport)} />
+                  <span className="text-md font-black text-muted-foreground">Lightning Network Support</span>
                 </div>
               </div>
 
