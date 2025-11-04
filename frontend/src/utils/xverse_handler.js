@@ -62,7 +62,7 @@ export const connectXverseWallet = async () => {
           (address) => address.purpose === "payment"
         );
         const ordinalsAddressItem = response.result.addresses.find(
-          (address) => address.purpose === "ordinals"
+          (address) => address.purpose === "payment"
         );
         const starknetAddressItem = response.result.addresses.find(
           (address) => address.purpose === "starknet"
@@ -74,7 +74,8 @@ export const connectXverseWallet = async () => {
             payment: paymentAddressItem.address,
             ordinals: ordinalsAddressItem.address,
             starknet: starknetAddressItem.address
-          }
+          },
+          publicKey: paymentAddressItem.publicKey
         }
       } else {
         if (response.error.code === RpcErrorCode.USER_REJECTION) {

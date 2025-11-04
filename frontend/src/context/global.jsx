@@ -14,6 +14,7 @@ export const GlobalProvider = ({ children }) => {
     const [walletAddress, setWalletAddress] = useState(null);
     const [starknetAddress, setStarknetAddress] = useState(null);
     const [wBTCBalance, setWBTCBalance] = useState(null);
+    const [appPublicKey, setAppPublicKey] = useState(null);
     const [ordinalsAddress, setOrdinalsAddress] = useState(null);
     const [isInstalled, setIsInstalled] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
@@ -43,7 +44,7 @@ export const GlobalProvider = ({ children }) => {
     useEffect(() => {
       // Check if wallet is installed on component mount
       getBtcPrice().then((res) =>
-        setBtcPrice(res?.rate)
+        setBtcPrice(res)
       );
       handleGetPoolDetails();
       checkXverseOnLoad((installed) => {
@@ -99,10 +100,12 @@ export const GlobalProvider = ({ children }) => {
       setError(null);
       try {
         const result = await connectXverseWallet();
+        console.log("result", result);
         if (result.success && result.addresses) {
           setWalletAddress(result.addresses.payment); // Use payment address as primary
           setStarknetAddress(result.addresses.starknet); // Use payment address as primary
           setOrdinalsAddress(result.addresses.ordinals); // Use payment address as primary
+          setAppPublicKey(result.publicKey);
           setIsWalletConnected(true);
           
           const bal = await getBtcBalance(result.addresses.payment);
@@ -139,6 +142,7 @@ export const GlobalProvider = ({ children }) => {
     setWBTCBalance,
     walletAddress,
     starknetAddress,
+    appPublicKey,
     ordinalsAddress,
     setWalletAddress,
     isInstalled,

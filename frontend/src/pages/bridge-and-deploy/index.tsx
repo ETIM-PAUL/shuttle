@@ -31,6 +31,7 @@ const BridgeAndDeploy = () => {
     handleGetWBTCBal,
     walletAddress,
     starknetAddress,
+    appPublicKey,
     btcBalance,
     protocols,
     btcPrice
@@ -115,7 +116,7 @@ const BridgeAndDeploy = () => {
       // Get funded PSBT
       const {psbt, signInputs} = await swap.getFundedPsbt({
         address: walletAddress, 
-        publicKey: "0229920e161c77db688903fdc9f740b140e7174d090fcde01e456f5c78994b0033" // You'll need to get this from your Bitcoin wallet
+        publicKey: appPublicKey // You'll need to get this from your Bitcoin wallet
       });
       
       const psbtBase64 = Buffer.from(psbt.toPSBT(0)).toString("base64");
@@ -304,7 +305,6 @@ const BridgeAndDeploy = () => {
 
     setIsDeploying(true);
     setShowTransactionStatus(true);
-    console.log(selectedProtocol)
 
     try {
       await handleBridgingBTC2WBTC();
@@ -428,7 +428,7 @@ const BridgeAndDeploy = () => {
                   btcPrice={btcPrice}
                   onAmountChange={setAmount}
                   walletBalance={btcBalance}
-                  isWalletConnected={true}
+                  isWalletConnected={isWalletConnected}
                 />
 
                 {/* Protocol Selection */}

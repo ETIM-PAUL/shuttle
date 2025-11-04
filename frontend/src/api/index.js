@@ -24,11 +24,10 @@ export const getBtcBalance = async (address) => {
 
 export const getBtcPrice = async () => {
     try {
-        const response = await fetch(`/api/v1/bitcoin/price`, {
+        const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd", {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': import.meta.env.VITE_XVERSE_API_Key
+            'Content-Type': 'application/json'
           },
         });
     
@@ -37,7 +36,7 @@ export const getBtcPrice = async () => {
         }
     
         const data = await response.json();
-        return data;
+        return data.bitcoin.usd;
       } catch (error) {
         console.error('Error fetching data:', error);
         throw error;
@@ -54,29 +53,31 @@ export const getVesuGenesisDetails = async () => {
         });
     
         const data = await response.json();
+        const prime = data?.data?.find((res) => res.name === "Prime");
+        const xBTC = data?.data?.find((res) => res.name === "Re7 xBTC");
 
         return [
           {
-            id: data?.data[15]?.id,
-            name: data?.data[15]?.name,
-            supplyApr: formatUnits(data?.data[15]?.assets[8]?.stats?.btcFiSupplyApr?.value, data?.data[19]?.assets[4]?.stats?.btcFiSupplyApr?.decimals),
-            borrowedApr: formatUnits(data?.data[15]?.assets[8]?.stats?.borrowApr?.value, data?.data[19]?.assets[4]?.stats?.borrowApr?.decimals),
-            interestRate: formatUnits(data?.data[15]?.assets[8]?.interestRate?.value, data?.data[19]?.assets[4]?.interestRate?.decimals),
-            reserve: formatUnits(data?.data[15]?.assets[8]?.config?.reserve?.value, data?.data[15]?.assets[8]?.config?.reserve?.decimals),
-            risk: data?.data[59]?.assets[8]?.risk,
-            totalSupplied: formatUnits(data?.data[15]?.assets[8]?.stats?.totalSupplied?.value, (data?.data[19]?.assets[4]?.stats?.totalSupplied?.decimals ?? 8)) + " WBTC",
-            maxUtilization: formatUnits(data?.data[15]?.assets[8]?.stats?.currentUtilization?.value, (data?.data[19]?.assets[4]?.stats?.currentUtilization?.decimals ?? 18)),
+            id: prime?.id,
+            name: prime?.name,
+            supplyApr: formatUnits(prime?.assets[7]?.stats?.btcFiSupplyApr?.value, prime?.assets[7]?.stats?.btcFiSupplyApr?.decimals),
+            borrowedApr: formatUnits(prime?.assets[7]?.stats?.borrowApr?.value, prime?.assets[7]?.stats?.borrowApr?.decimals),
+            interestRate: formatUnits(prime?.assets[7]?.interestRate?.value, prime?.assets[7]?.interestRate?.decimals),
+            reserve: formatUnits(prime?.assets[7]?.config?.reserve?.value, prime?.assets[7]?.config?.reserve?.decimals),
+            risk: prime?.assets[7]?.risk,
+            totalSupplied: formatUnits(prime?.assets[7]?.stats?.totalSupplied?.value, (prime?.assets[7]?.stats?.totalSupplied?.decimals ?? 8)) + " WBTC",
+            maxUtilization: formatUnits(prime?.assets[7]?.stats?.currentUtilization?.value, (prime?.assets[7]?.stats?.currentUtilization?.decimals ?? 18)),
           },
           {
-            id: data?.data[19]?.id,
-            name: data?.data[19]?.name,
-            supplyApr: formatUnits(data?.data[19]?.assets[4]?.stats?.btcFiSupplyApr?.value, data?.data[19]?.assets[4]?.stats?.btcFiSupplyApr?.decimals),
-            borrowedApr: formatUnits(data?.data[19]?.assets[4]?.stats?.borrowApr?.value, data?.data[19]?.assets[4]?.stats?.borrowApr?.decimals),
-            interestRate: formatUnits(data?.data[19]?.assets[4]?.interestRate?.value, data?.data[19]?.assets[4]?.interestRate?.decimals),
-            reserve: formatUnits(data?.data[19]?.assets[4]?.config?.reserve?.value, data?.data[19]?.assets[4]?.config?.reserve?.decimals),
-            risk: data?.data[19]?.assets[4]?.risk,
-            totalSupplied: formatUnits(data?.data[19]?.assets[4]?.stats?.totalSupplied?.value, (data?.data[19]?.assets[4]?.stats?.totalSupplied?.decimals ?? 8)) + " WBTC",
-            maxUtilization: formatUnits(data?.data[19]?.assets[4]?.stats?.currentUtilization?.value, (data?.data[19]?.assets[4]?.stats?.currentUtilization?.decimals ?? 18)),
+            id:xBTC?.id,
+            name: xBTC?.name,
+            supplyApr: formatUnits(xBTC?.assets[8]?.stats?.btcFiSupplyApr?.value, xBTC?.assets[8]?.stats?.btcFiSupplyApr?.decimals),
+            borrowedApr: formatUnits(xBTC?.assets[8]?.stats?.borrowApr?.value, xBTC?.assets[8]?.stats?.borrowApr?.decimals),
+            interestRate: formatUnits(xBTC?.assets[8]?.interestRate?.value, xBTC?.assets[8]?.interestRate?.decimals),
+            reserve: formatUnits(xBTC?.assets[8]?.config?.reserve?.value, xBTC?.assets[8]?.config?.reserve?.decimals),
+            risk: xBTC?.assets[8]?.risk,
+            totalSupplied: formatUnits(xBTC?.assets[8]?.stats?.totalSupplied?.value, (xBTC?.assets[8]?.stats?.totalSupplied?.decimals ?? 8)) + " WBTC",
+            maxUtilization: formatUnits(xBTC?.assets[8]?.stats?.currentUtilization?.value, (xBTC?.assets[8]?.stats?.currentUtilization?.decimals ?? 18)),
           }
         ]
       } catch (error) {

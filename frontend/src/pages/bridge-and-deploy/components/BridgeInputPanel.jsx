@@ -8,7 +8,7 @@ const BridgeInputPanel = ({
   btcPrice,
   onAmountChange, 
   walletBalance = '0.12345678',
-  isWalletConnected = true 
+  isWalletConnected = false 
 }) => {
   const [usdValue, setUsdValue] = useState('0.00');
 
@@ -21,11 +21,6 @@ const BridgeInputPanel = ({
     }
   }, [amount, btcPrice]);
 
-  const handleMaxClick = () => {
-    if (isWalletConnected) {
-      onAmountChange(walletBalance);
-    }
-  };
 
   const handlePercentageClick = (percentage) => {
     if (isWalletConnected) {
@@ -103,7 +98,7 @@ const BridgeInputPanel = ({
           <Button
             variant="outline"
             size="xs"
-            onClick={handleMaxClick}
+            onClick={() => handlePercentageClick(100)}
             disabled={!isWalletConnected}
           >
             MAX
