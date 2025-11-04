@@ -8,13 +8,13 @@ A modern DeFi platform that enables users to bridge Bitcoin to Starknet and depl
 
 ## Description
 
-Shuttle Frontend is a Vute-based web application that simplifies the process of earning yield on Bitcoin. It allows users to:
+Shuttle is a web application that simplifies the process of earning yield on Bitcoin. It allows users to:
 
 - **Bridge Bitcoin to Wrapped Bitcoin (WBTC)** on Starknet using Atomiq Labs SDK
 - **Deploy to yield protocols** like Vesu Lending and Troves Vault
 - **Monitor portfolio** performance and balances
 
-The platform integrates with Xverse wallet for Bitcoin transactions and for L2 interactions, providing a seamless cross-chain experience.
+The platform integrates with Xverse wallet for Bitcoin transactions and for Starknet Network interactions, providing a seamless cross-chain experience.
 
 ---
 
