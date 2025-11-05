@@ -23,6 +23,7 @@ import { WBTC_abi } from '../../utils/main_wbtc_abi';
 import { useEffect } from 'react';
 import { connect } from '@starknet-io/get-starknet';
 import Input from '../../components/ui/Input';
+import Button from '../../components/ui/Button';
 
 
 const BridgeAndDeploy = () => {
@@ -52,12 +53,14 @@ const BridgeAndDeploy = () => {
   const [receivingLightningInvoice, setReceivingLightningInvoice] = useState('');
   const [qrCodeData, setQrCodeData] = useState(null);
   const [expiryDate, setExpiryDate] = useState(null);
+  const [showLightningModal, setShowLightningModal] = useState(false);
   
   const rpcProvider = new RpcProvider({
     nodeUrl: import.meta.env.VITE_STARKNET_RPC
   });
 
-  const Factory = new SwapperFactory<[StarknetInitializerType]>([StarknetInitializer]);
+
+  const Factory = new SwapperFactory<[StarknetInitializerType]>([StarknetInitializer] as const);
   const Tokens = Factory.Tokens;
 
   const swapper = Factory.newSwapper({
@@ -224,9 +227,12 @@ const BridgeAndDeploy = () => {
       //Get the URI hyperlink (contains the lightning network invoice) which can be displayed also as QR code
       const qrCodeData: string = swap.getHyperlink();
       
+      console.log("qrcode", qrCodeData)
       setReceivingLightningInvoice(receivingLightningInvoice);
       setQrCodeData(qrCodeData);
       setExpiryDate(swap.getQuoteExpiry());
+      setShowTransactionStatus(false);
+      setShowLightningModal(true);
       
   
       // Wait for payment
@@ -245,6 +251,9 @@ const BridgeAndDeploy = () => {
       }
   
       setCompletedSteps([...completedSteps, "bridge_confirmation"])
+
+      setShowTransactionStatus(true);
+      setShowLightningModal(false);
 
       if (selectedProtocol?.id === "troves-vault") {
         handleTrovesProtocolDeposit();
@@ -409,21 +418,34 @@ const BridgeAndDeploy = () => {
     try {
       setGettingAtomiqOutput(true);
       const _exactIn = true;
-      const _amount = fromHumanReadableString(amount, Tokens.BITCOIN.BTC);
+      const _amount = fromHumanReadableString(amount, lightningSupport ? Tokens.BITCOIN.BTCLN : Tokens.BITCOIN.BTC );
 
       await swapper.init();
 
-      const swap = await swapper.swap(
-        Tokens.BITCOIN.BTC,
-        Tokens.STARKNET.WBTC,
-        _amount,
-        _exactIn,
-        undefined,
-        starknetAddress,
-        {
-          // gasAmount: 1_000_000_000_000_000_000n
-        }
-      );
+      let swap;
+
+      if (lightningSupport) {
+        swap = await swapper.swap(
+          Tokens.BITCOIN.BTCLN,
+          Tokens.STARKNET.WBTC,
+          _amount,
+          _exactIn,
+          undefined,
+          starknetAddress,
+        );
+
+      } else {
+        swap = await swapper.swap(
+          Tokens.BITCOIN.BTC,
+          Tokens.STARKNET.WBTC,
+          _amount,
+          _exactIn,
+          undefined,
+          starknetAddress,
+        );
+      }
+
+      console.log("swap", swap.getOutput())
 
     setAtomiqOutput(swap.getOutput().toString().replace(/[^\d.]/g, ""));
     if (swap.getOutput().toString()) {
@@ -453,7 +475,7 @@ const BridgeAndDeploy = () => {
       handleWBTCOutput();
     }
   }, [amount])
-  
+
 
 
   return (
@@ -620,6 +642,72 @@ const BridgeAndDeploy = () => {
             </div>
           </div>
         </main>
+
+        {lightningSupport && showLightningModal && (
+          <div className="fixed inset-0 z-10 bg-black/50 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setShowLightningModal(false)}
+              aria-hidden="true"
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="ln-invoice-title"
+              className="relative bg-gray-700 border border-border rounded-lg w-full max-w-md shadow-xl"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <h4 id="ln-invoice-title" className="text-base font-semibold text-foreground">
+                  Lightning Network Invoice
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => setShowLightningModal(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="p-4 space-y-4">
+                <div className="flex items-start space-x-2">
+                  <span className="text-muted-foreground mt-0.5">Invoice:</span>
+                  <span className="text-foreground font-medium break-all flex-1">
+                    {receivingLightningInvoice}
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <span className="text-muted-foreground">QR Code:</span>
+                  {/* <img src={qrCodeData} alt="QR Code" className="w-32 h-32" /> */}
+                  <img
+                  src={qrCodeData ? `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrCodeData)}` : ''}
+                  alt="Lightning Invoice QR"
+                  className="w-32 h-32"
+                />
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-border flex justify-end gap-2">
+                <Button
+                  variant="default" size="sm"
+                  onClick={() => setShowLightningModal(false)}
+                  className="px-3 py-1.5 cursor-pointer rounded-md border border-border text-foreground hover:bg-muted/50 transition"
+                >
+                  Close
+                </Button>
+                <Button
+                  variant="default" size="sm"
+                  onClick={() => navigator.clipboard?.writeText(receivingLightningInvoice)}
+                  className="px-3 py-1.5 cursor-pointer rounded-md border border-border bg-accent text-white hover:opacity-90 transition"
+                >
+                  Copy Invoice
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Transaction Status Overlay */}
         <TransactionStatusOverlay

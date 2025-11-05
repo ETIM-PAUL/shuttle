@@ -20,14 +20,6 @@ export default defineConfig({
   define: {
     global: "globalThis", // 👈 critical line
   },
-  resolve: {
-    alias: {
-     "@/*": ["*"],
-     '@starknet-io/starknet-types-08': path.resolve(__dirname, 'src/starknet-types-08.js'),
-     buffer: "buffer",
-     process: "process/browser",
-    },
-  },
   optimizeDeps: {
     exclude: ['@starknet-io/starknet-types-08'], // skip prebundling
   },
