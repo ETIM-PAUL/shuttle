@@ -614,7 +614,7 @@ const BridgeAndDeploy = () => {
                 </div>
 
                 {/* Protocol Comparison */}
-                <div className="bg-card border border-border rounded-lg p-4">
+                <div className="bg-card hidden border border-border rounded-lg p-4">
                   <h4 className="text-sm font-medium text-foreground mb-3">
                     Protocol Comparison
                   </h4>
