@@ -56,7 +56,6 @@ export const connectXverseWallet = async () => {
 
     try {
       const response = await request('wallet_connect', null);
-      console.log(response)
       if (response.status === 'success') {
         const paymentAddressItem = response.result.addresses.find(
           (address) => address.purpose === "payment"
@@ -142,7 +141,8 @@ export const getBtcBalance = async (address) => {
 };
 
 export async function getVesu_WBTC_Balance(userAddress) {
-  const provider = new RpcProvider({ nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet-mainnet.public.blastapi.io' });
+  const provider = new RpcProvider({ nodeUrl: import.meta.env.VITE_STARKNET_RPC || 'https://starknet.api.onfinality.io/public/rpc/v0_9' });
+  console.log("provider", provider);
   const tokenAddress = "0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac";
   const erc20 = new Contract(ERC20_ABI, tokenAddress, provider);
 
@@ -150,6 +150,9 @@ export async function getVesu_WBTC_Balance(userAddress) {
     erc20.balanceOf(userAddress),
     erc20.decimals()
   ]);
+
+  console.log("decimalsRes", decimalsRes);
+
 
   const raw = balanceRes;
   const decimals = Number(decimalsRes);

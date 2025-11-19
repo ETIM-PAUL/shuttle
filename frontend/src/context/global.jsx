@@ -56,6 +56,8 @@ export const GlobalProvider = ({ children }) => {
       setError(null);
       try {
           const res = await getVesu_WBTC_Balance(address);
+          console.log("res", res);
+          
           setWBTCBalance(res?.human);
         } catch (error) {
           console.log("error", error)

@@ -56,17 +56,19 @@ export const getVesuGenesisDetails = async () => {
         const prime = data?.data?.find((res) => res.name === "Prime");
         const xBTC = data?.data?.find((res) => res.name === "Re7 xBTC");
 
+        console.log("prime", prime)
+
         return [
           {
             id: prime?.id,
             name: prime?.name,
-            supplyApr: formatUnits(prime?.assets[7]?.stats?.btcFiSupplyApr?.value, prime?.assets[7]?.stats?.btcFiSupplyApr?.decimals),
-            borrowedApr: formatUnits(prime?.assets[7]?.stats?.borrowApr?.value, prime?.assets[7]?.stats?.borrowApr?.decimals),
-            interestRate: formatUnits(prime?.assets[7]?.interestRate?.value, prime?.assets[7]?.interestRate?.decimals),
-            reserve: formatUnits(prime?.assets[7]?.config?.reserve?.value, prime?.assets[7]?.config?.reserve?.decimals),
-            risk: prime?.assets[7]?.risk,
-            totalSupplied: formatUnits(prime?.assets[7]?.stats?.totalSupplied?.value, (prime?.assets[7]?.stats?.totalSupplied?.decimals ?? 8)) + " WBTC",
-            maxUtilization: formatUnits(prime?.assets[7]?.stats?.currentUtilization?.value, (prime?.assets[7]?.stats?.currentUtilization?.decimals ?? 18)),
+            supplyApr: formatUnits(prime?.assets[2]?.stats?.btcFiSupplyApr?.value, prime?.assets[2]?.stats?.btcFiSupplyApr?.decimals),
+            borrowedApr: formatUnits(prime?.assets[2]?.stats?.borrowApr?.value, prime?.assets[2]?.stats?.borrowApr?.decimals),
+            interestRate: formatUnits(prime?.assets[2]?.interestRate?.value, prime?.assets[2]?.interestRate?.decimals),
+            reserve: formatUnits(prime?.assets[2]?.config?.reserve?.value, prime?.assets[2]?.config?.reserve?.decimals),
+            risk: prime?.assets[2]?.risk,
+            totalSupplied: formatUnits(prime?.assets[2]?.stats?.totalSupplied?.value, (prime?.assets[2]?.stats?.totalSupplied?.decimals ?? 2)) + " WBTC",
+            maxUtilization: formatUnits(prime?.assets[2]?.stats?.currentUtilization?.value, (prime?.assets[2]?.stats?.currentUtilization?.decimals ?? 18)),
           },
           {
             id:xBTC?.id,
